@@ -1,0 +1,157 @@
+{
+  "feature_id": "01",
+  "feature_file": "01-app-shell.feature.md",
+  "generated": "2026-09-04",
+  "generator": "haiku-sub-agent via /peak-workflow:capture-requirements",
+  "requirements": [
+    {
+      "id": "TOR-01-9FydwtZ",
+      "title": "The application footer shall display the application name and semantic version in the format \"Summit vX.Y.Z\", sourced from package.json#version",
+      "traces_to": {
+        "vision": [
+          {
+            "section": "§TH — Tool Hygiene & Operability (AGENTS.md)",
+            "paraphrase": "The tool-hygiene baseline declares the footer as the user-visible version surface, fed from package.json so users always know what they are running."
+          }
+        ],
+        "conops": [
+          {
+            "scenario": "S1",
+            "step": 2,
+            "paraphrase": "First boot shows the footer version, establishing transparency from the very first visit."
+          }
+        ]
+      }
+    },
+    {
+      "id": "TOR-01-WqWceSw",
+      "title": "The application shall emit a startup log line containing its name and semantic version at INFO level as the first console record on boot",
+      "traces_to": {
+        "vision": [
+          {
+            "section": "§TH — Tool Hygiene & Operability (AGENTS.md)",
+            "paraphrase": "Startup version stamping is the declared browser-side analog of process-startup log stamping."
+          }
+        ],
+        "conops": [
+          {
+            "scenario": "S1",
+            "step": 2,
+            "paraphrase": "Boot prints the version line before anything else happens, so diagnostics start from a known point."
+          }
+        ]
+      }
+    },
+    {
+      "id": "TOR-01-QdBg1u6",
+      "title": "The application shall define its semantic version in exactly one source, package.json#version, such that a change there changes both the footer and the startup log line",
+      "traces_to": {
+        "vision": [
+          {
+            "section": "§TH — Tool Hygiene & Operability (AGENTS.md)",
+            "paraphrase": "Version has a single source of truth by declaration; every display point must derive from it."
+          }
+        ],
+        "conops": [
+          {
+            "scenario": "S2",
+            "step": 5,
+            "paraphrase": "The footer a returning user sees must always agree with what the app reports about itself at boot."
+          }
+        ]
+      }
+    },
+    {
+      "id": "TOR-01-LWNJkRM",
+      "title": "The application logger shall emit records at the DEBUG, INFO, WARN, and ERROR levels in human-readable plain-text format \"[LEVEL] message\" via the corresponding console methods",
+      "traces_to": {
+        "vision": [
+          {
+            "section": "§TH — Tool Hygiene & Operability (AGENTS.md)",
+            "paraphrase": "The logging convention fixes the four levels and the [LEVEL] message plain-text format through console methods."
+          }
+        ],
+        "conops": [
+          {
+            "scenario": "S1",
+            "step": null,
+            "paraphrase": "All diagnostic output across the operational scenarios flows through this one console convention."
+          }
+        ]
+      }
+    },
+    {
+      "id": "TOR-01-yNjDWrJ",
+      "title": "The application shall display user-facing error messages in the page that name the problem AND the next user action, never console-only",
+      "traces_to": {
+        "vision": [
+          {
+            "section": "§TH — Tool Hygiene & Operability (AGENTS.md)",
+            "paraphrase": "The error-message standard requires problem plus next action, rendered in the UI."
+          },
+          {
+            "section": "§9 — Design Direction",
+            "paraphrase": "Inline errors that name the problem and the next action are a stated design principle."
+          }
+        ],
+        "conops": [
+          {
+            "scenario": "S1",
+            "step": null,
+            "paraphrase": "Every failure a user can trigger (bad input, unreadable data) must be recoverable from the page alone."
+          }
+        ]
+      }
+    },
+    {
+      "id": "TOR-01-UBs4L4y",
+      "title": "The application shall boot directly into a usable single-screen interface with no account, configuration, or setup step",
+      "traces_to": {
+        "vision": [
+          {
+            "section": "§5 — Goals & Success Criteria (MVP)",
+            "paraphrase": "Goal G6: opens to a usable app with no account and no configuration."
+          }
+        ],
+        "conops": [
+          {
+            "scenario": "S1",
+            "step": 2,
+            "paraphrase": "A first-time visitor lands on the complete single screen — input, filter, list, footer — ready to act."
+          }
+        ]
+      }
+    },
+    {
+      "id": "TOR-01-0d73l6K",
+      "title": "The application shall make zero network requests and remain fully functional offline after first load",
+      "traces_to": {
+        "vision": [
+          {
+            "section": "§10 — Data Strategy",
+            "paraphrase": "No network I/O at any point; the app is fully functional offline after first load."
+          },
+          {
+            "section": "§5 — Goals & Success Criteria (MVP)",
+            "paraphrase": "Goal G5: zero network calls, works fully offline."
+          }
+        ],
+        "conops": [
+          {
+            "scenario": "S2",
+            "step": 1,
+            "paraphrase": "The returning user opens Summit with no network and everything still works."
+          }
+        ]
+      }
+    }
+  ],
+  "coverage_gaps": [
+    {
+      "gap_type": "uncovered_source",
+      "source_type": "vision_goal",
+      "source_ref": "§5 — Goal G7 (Reference clarity)",
+      "note": "G7 is about the repo's docs and git history teaching the peak-workflow lifecycle — satisfied by the repository itself, not by observable app behavior, so it is intentionally not a TOR."
+    }
+  ]
+}

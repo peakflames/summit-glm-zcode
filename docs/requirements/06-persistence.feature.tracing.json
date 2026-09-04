@@ -1,0 +1,142 @@
+{
+  "feature_id": "06",
+  "feature_file": "06-persistence.feature.md",
+  "generated": "2026-09-04",
+  "generator": "haiku-sub-agent via /peak-workflow:capture-requirements",
+  "requirements": [
+    {
+      "id": "TOR-06-anYR3mD",
+      "title": "The application shall persist all state under the single localStorage key \"summit.habits.v1\" as a JSON document with schemaVersion 1 and a habits array",
+      "traces_to": {
+        "vision": [
+          {
+            "section": "§10 — Data Strategy",
+            "paraphrase": "One namespaced, versioned key holds a schemaVersion plus a habits array with the documented fields."
+          }
+        ],
+        "conops": [
+          {
+            "scenario": "S4",
+            "step": 6,
+            "paraphrase": "Archiving is observable in storage as the archived flag with completions untouched."
+          }
+        ]
+      }
+    },
+    {
+      "id": "TOR-06-OcAYtZQ",
+      "title": "The application shall write state to localStorage immediately upon every mutation, with no save button or delay",
+      "traces_to": {
+        "vision": [
+          {
+            "section": "§10 — Data Strategy",
+            "paraphrase": "Every mutation serializes and writes immediately — no save button, no debounce."
+          }
+        ],
+        "conops": [
+          {
+            "scenario": "S1",
+            "step": 7,
+            "paraphrase": "The moment a check-in happens, it is already saved — persistence is never a separate act."
+          }
+        ]
+      }
+    },
+    {
+      "id": "TOR-06-OQbS0LR",
+      "title": "The application shall hydrate its state from localStorage on boot so that habits, streaks, archived flags, and today's check-ins all survive a reload",
+      "traces_to": {
+        "vision": [
+          {
+            "section": "§5 — Goals & Success Criteria (MVP)",
+            "paraphrase": "Goal G5: all state lives in localStorage and survives reload/restart."
+          }
+        ],
+        "conops": [
+          {
+            "scenario": "S1",
+            "step": 9,
+            "paraphrase": "The reload in the first-run scenario proves habit, streak, and check state all persist."
+          }
+        ]
+      }
+    },
+    {
+      "id": "TOR-06-7l9Trjh",
+      "title": "The application shall start cleanly with an empty state and no error when the storage key is absent",
+      "traces_to": {
+        "vision": [
+          {
+            "section": "§10 — Data Strategy",
+            "paraphrase": "A fresh browser is a normal first run, not an error condition."
+          }
+        ],
+        "conops": [
+          {
+            "scenario": "S1",
+            "step": 2,
+            "paraphrase": "First-time boot shows the friendly no-habits-yet state, not a failure."
+          }
+        ]
+      }
+    },
+    {
+      "id": "TOR-06-PlcuFFf",
+      "title": "The application shall surface unreadable saved data with an in-page banner that names the problem and offers a \"Start fresh\" action, rather than silently showing an empty list",
+      "traces_to": {
+        "vision": [
+          {
+            "section": "§10 — Data Strategy",
+            "paraphrase": "Unreadable saved data is a first-class state: a banner names the problem and offers Start fresh, never a silent empty app."
+          }
+        ],
+        "conops": [
+          {
+            "scenario": "S1",
+            "step": null,
+            "paraphrase": "The recovery path keeps the user in control of their raw data instead of discarding it."
+          }
+        ]
+      }
+    },
+    {
+      "id": "TOR-06-CStJTf4",
+      "title": "The application shall treat a stored schemaVersion it does not understand as unreadable data and show the same recovery banner",
+      "traces_to": {
+        "vision": [
+          {
+            "section": "§10 — Data Strategy",
+            "paraphrase": "schemaVersion exists so future releases can migrate — v1 must never silently rewrite a future-shaped document."
+          }
+        ],
+        "conops": [
+          {
+            "scenario": "S1",
+            "step": null,
+            "paraphrase": "Forward-compatibility failure lands on the same explicit recovery path as corruption."
+          }
+        ]
+      }
+    },
+    {
+      "id": "TOR-06-I9rZxQC",
+      "title": "The application shall reset to a clean empty state when the user chooses \"Start fresh\"",
+      "traces_to": {
+        "vision": [
+          {
+            "section": "§10 — Data Strategy",
+            "paraphrase": "Start fresh is the user-initiated recovery action promised by the banner."
+          }
+        ],
+        "conops": [
+          {
+            "scenario": "S1",
+            "step": null,
+            "paraphrase": "Recovery ends in the familiar empty state, ready to begin again."
+          }
+        ]
+      }
+    }
+  ],
+  "coverage_gaps": []
+}

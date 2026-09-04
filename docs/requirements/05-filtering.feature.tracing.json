@@ -1,0 +1,104 @@
+{
+  "feature_id": "05",
+  "feature_file": "05-filtering.feature.md",
+  "generated": "2026-09-04",
+  "generator": "haiku-sub-agent via /peak-workflow:capture-requirements",
+  "requirements": [
+    {
+      "id": "TOR-05-GjGNESQ",
+      "title": "The application shall offer a three-segment filter control labeled \"All\", \"Active\", and \"Archived\"",
+      "traces_to": {
+        "vision": [
+          {
+            "section": "§6 — MVP Scope Summary",
+            "paraphrase": "List & filtering ships a three-way All/Active/Archived control."
+          }
+        ],
+        "conops": [
+          {
+            "scenario": "S4",
+            "step": 4,
+            "paraphrase": "Switching to the Archived segment is how dropped habits stay reachable."
+          }
+        ]
+      }
+    },
+    {
+      "id": "TOR-05-PrNhHoE",
+      "title": "The application shall open with the Active filter selected by default",
+      "traces_to": {
+        "vision": [
+          {
+            "section": "§6 — MVP Scope Summary",
+            "paraphrase": "Active is the declared default view so the daily list is what loads."
+          }
+        ],
+        "conops": [
+          {
+            "scenario": "S1",
+            "step": 2,
+            "paraphrase": "First boot lands on the Active view, ready for the first habit."
+          }
+        ]
+      }
+    },
+    {
+      "id": "TOR-05-sAMxFFs",
+      "title": "The application shall show only active habits in the Active view and only archived habits in the Archived view",
+      "traces_to": {
+        "vision": [
+          {
+            "section": "§5 — Goals & Success Criteria (MVP)",
+            "paraphrase": "Goal G4: the filter control separates active from archived, with restore available."
+          }
+        ],
+        "conops": [
+          {
+            "scenario": "S4",
+            "step": 5,
+            "paraphrase": "The Archived view lists the dropped habit with its final streak and a Restore action."
+          }
+        ]
+      }
+    },
+    {
+      "id": "TOR-05-qD4GGzl",
+      "title": "The application shall show every habit in the All view with archived rows visually distinguished",
+      "traces_to": {
+        "vision": [
+          {
+            "section": "§6 — MVP Scope Summary",
+            "paraphrase": "The All view shows everything, with archived rows tagged."
+          }
+        ],
+        "conops": [
+          {
+            "scenario": "S5",
+            "step": 5,
+            "paraphrase": "All is the cross-check view where active and archived habits appear together."
+          }
+        ]
+      }
+    },
+    {
+      "id": "TOR-05-0maiBlC",
+      "title": "The application shall show a distinct, friendly empty state for each filter that has no rows",
+      "traces_to": {
+        "vision": [
+          {
+            "section": "§6 — MVP Scope Summary",
+            "paraphrase": "Clear empty states for each filter are an explicit scope item."
+          }
+        ],
+        "conops": [
+          {
+            "scenario": "S1",
+            "step": 2,
+            "paraphrase": "First-time visitors meet the no-habits-yet message; archived and active views have their own variants."
+          }
+        ]
+      }
+    }
+  ],
+  "coverage_gaps": []
+}

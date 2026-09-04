@@ -1,0 +1,123 @@
+{
+  "feature_id": "04",
+  "feature_file": "04-streaks.feature.md",
+  "generated": "2026-09-04",
+  "generator": "haiku-sub-agent via /peak-workflow:capture-requirements",
+  "requirements": [
+    {
+      "id": "TOR-04-5xu6Aag",
+      "title": "The application shall display a current-streak badge on every habit row",
+      "traces_to": {
+        "vision": [
+          {
+            "section": "§9 — Design Direction",
+            "paraphrase": "The streak number is the visual hero of every row — always present."
+          }
+        ],
+        "conops": [
+          {
+            "scenario": "S1",
+            "step": 5,
+            "paraphrase": "A brand-new habit renders with streak 0, so the badge exists from the first row."
+          }
+        ]
+      }
+    },
+    {
+      "id": "TOR-04-cS2CaLm",
+      "title": "The application shall compute the current streak as the count of consecutive completed local calendar days ending today, when today is completed",
+      "traces_to": {
+        "vision": [
+          {
+            "section": "§6 — MVP Scope Summary",
+            "paraphrase": "The normative streak rule: consecutive days ending today when today is completed."
+          }
+        ],
+        "conops": [
+          {
+            "scenario": "S2",
+            "step": 4,
+            "paraphrase": "Checking today off extends the visible run to include today."
+          }
+        ]
+      }
+    },
+    {
+      "id": "TOR-04-ixZC5y3",
+      "title": "The application shall keep the streak visible without reset when today is not yet completed but yesterday is",
+      "traces_to": {
+        "vision": [
+          {
+            "section": "§6 — MVP Scope Summary",
+            "paraphrase": "The yesterday-grace clause: an unchecked day still shows the streak until the day truly ends."
+          }
+        ],
+        "conops": [
+          {
+            "scenario": "S2",
+            "step": 2,
+            "paraphrase": "Opening the app the next morning still shows yesterday's streak before the check-in."
+          }
+        ]
+      }
+    },
+    {
+      "id": "TOR-04-Dzlhzul",
+      "title": "The application shall display a streak of 0 when neither today nor yesterday is completed",
+      "traces_to": {
+        "vision": [
+          {
+            "section": "§6 — MVP Scope Summary",
+            "paraphrase": "The zero clause of the streak rule: a missed day honestly resets the count."
+          }
+        ],
+        "conops": [
+          {
+            "scenario": "S3",
+            "step": 3,
+            "paraphrase": "The user who skipped days sees 0 — the number tells the truth, no guilt mechanics."
+          }
+        ]
+      }
+    },
+    {
+      "id": "TOR-04-Ft8iQbI",
+      "title": "The application shall update the streak badge immediately when \"Done today\" is toggled, without a page reload",
+      "traces_to": {
+        "vision": [
+          {
+            "section": "§5 — Goals & Success Criteria (MVP)",
+            "paraphrase": "Goal G3: checking today off updates the streak immediately."
+          }
+        ],
+        "conops": [
+          {
+            "scenario": "S1",
+            "step": 7,
+            "paraphrase": "The badge moves 0 to 1 in the already-rendered page — instant feedback."
+          }
+        ]
+      }
+    },
+    {
+      "id": "TOR-04-GN2fJoI",
+      "title": "The application shall recompute a restored habit's streak from its preserved completion history",
+      "traces_to": {
+        "vision": [
+          {
+            "section": "§6 — MVP Scope Summary",
+            "paraphrase": "Archive/restore preserves completions, so streak logic applies unchanged after restore."
+          }
+        ],
+        "conops": [
+          {
+            "scenario": "S5",
+            "step": 5,
+            "paraphrase": "A restored habit shows its history-derived streak — alive if yesterday or today counts, else 0."
+          }
+        ]
+      }
+    }
+  ],
+  "coverage_gaps": []
+}

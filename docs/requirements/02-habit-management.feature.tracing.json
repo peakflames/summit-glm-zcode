@@ -1,0 +1,161 @@
+{
+  "feature_id": "02",
+  "feature_file": "02-habit-management.feature.md",
+  "generated": "2026-09-04",
+  "generator": "haiku-sub-agent via /peak-workflow:capture-requirements",
+  "requirements": [
+    {
+      "id": "TOR-02-XOoULU3",
+      "title": "The application shall add a new habit by name through the \"Add habit\" input and Add button, showing it immediately in the habit list",
+      "traces_to": {
+        "vision": [
+          {
+            "section": "§5 — Goals & Success Criteria (MVP)",
+            "paraphrase": "Goal G1: a new habit appears in the list immediately after being added."
+          }
+        ],
+        "conops": [
+          {
+            "scenario": "S1",
+            "step": 5,
+            "paraphrase": "Submitting the add form produces a full row — name, streak 0, checkbox, Archive action — at once."
+          }
+        ]
+      }
+    },
+    {
+      "id": "TOR-02-w9nrh1o",
+      "title": "The application shall submit the \"Add habit\" input when the user presses Enter, behaving identically to clicking Add",
+      "traces_to": {
+        "vision": [
+          {
+            "section": "§9 — Design Direction",
+            "paraphrase": "Instant, low-friction interaction: Enter should feel the same as the button."
+          }
+        ],
+        "conops": [
+          {
+            "scenario": "S1",
+            "step": 4,
+            "paraphrase": "The scenario explicitly allows pressing Enter as the add gesture."
+          }
+        ]
+      }
+    },
+    {
+      "id": "TOR-02-G8b7pmU",
+      "title": "The application shall persist a newly added habit so that it survives a page reload",
+      "traces_to": {
+        "vision": [
+          {
+            "section": "§5 — Goals & Success Criteria (MVP)",
+            "paraphrase": "Goal G1's success criterion: the added habit survives a page reload."
+          }
+        ],
+        "conops": [
+          {
+            "scenario": "S1",
+            "step": 9,
+            "paraphrase": "Reloading proves the habit stuck — the user's proof the app keeps its word."
+          }
+        ]
+      }
+    },
+    {
+      "id": "TOR-02-flxKIoM",
+      "title": "The application shall reject an empty or whitespace-only habit name with an inline error that names the problem and the next user action",
+      "traces_to": {
+        "vision": [
+          {
+            "section": "§TH — Tool Hygiene & Operability (AGENTS.md)",
+            "paraphrase": "Validation failures follow the error standard: name the problem and the next action, inline."
+          }
+        ],
+        "conops": [
+          {
+            "scenario": "S1",
+            "step": 3,
+            "paraphrase": "The add input expects a typed name; submitting nothing must be refused, not silently ignored."
+          }
+        ]
+      }
+    },
+    {
+      "id": "TOR-02-lMWubKc",
+      "title": "The application shall enforce a maximum habit-name length of 80 characters, accepting a name of exactly 80 characters and rejecting 81 or more",
+      "traces_to": {
+        "vision": [
+          {
+            "section": "§6 — MVP Scope Summary",
+            "paraphrase": "Habit management is name-only with a bounded length so rows stay readable on one line."
+          }
+        ],
+        "conops": [
+          {
+            "scenario": "S1",
+            "step": null,
+            "paraphrase": "The add flow's boundary condition at the 80-character limit."
+          }
+        ]
+      }
+    },
+    {
+      "id": "TOR-02-f9diV8o",
+      "title": "The application shall allow duplicate habit names, creating a second independent habit row",
+      "traces_to": {
+        "vision": [
+          {
+            "section": "§6 — MVP Scope Summary",
+            "paraphrase": "Duplicates are deliberately allowed — the MVP adds no uniqueness machinery."
+          }
+        ],
+        "conops": [
+          {
+            "scenario": "S1",
+            "step": null,
+            "paraphrase": "Two same-named habits must track completions independently of each other."
+          }
+        ]
+      }
+    },
+    {
+      "id": "TOR-02-c7UnNH0",
+      "title": "The application shall archive a habit on demand, removing it from the Active view while preserving its completion history",
+      "traces_to": {
+        "vision": [
+          {
+            "section": "§6 — MVP Scope Summary",
+            "paraphrase": "Archive is a core habit-management capability: out of the daily list, history kept."
+          }
+        ],
+        "conops": [
+          {
+            "scenario": "S4",
+            "step": 2,
+            "paraphrase": "Clicking Archive on the row declutters the Active view without destroying anything."
+          }
+        ]
+      }
+    },
+    {
+      "id": "TOR-02-E0o3IbX",
+      "title": "The application shall restore an archived habit on demand, returning it to the Active view with its completion history intact",
+      "traces_to": {
+        "vision": [
+          {
+            "section": "§5 — Goals & Success Criteria (MVP)",
+            "paraphrase": "Goal G4: archived habits are restorable."
+          }
+        ],
+        "conops": [
+          {
+            "scenario": "S5",
+            "step": 3,
+            "paraphrase": "Restore puts a dropped habit back into rotation with zero data loss."
+          }
+        ]
+      }
+    }
+  ],
+  "coverage_gaps": []
+}

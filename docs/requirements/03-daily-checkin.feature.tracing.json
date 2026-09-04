@@ -1,0 +1,85 @@
+{
+  "feature_id": "03",
+  "feature_file": "03-daily-checkin.feature.md",
+  "generated": "2026-09-04",
+  "generator": "haiku-sub-agent via /peak-workflow:capture-requirements",
+  "requirements": [
+    {
+      "id": "TOR-03-WUQGIE9",
+      "title": "The application shall record today's completion when the \"Done today\" checkbox is clicked",
+      "traces_to": {
+        "vision": [
+          {
+            "section": "§5 — Goals & Success Criteria (MVP)",
+            "paraphrase": "Goal G2: one click on Done today records the day and persists."
+          }
+        ],
+        "conops": [
+          {
+            "scenario": "S1",
+            "step": 6,
+            "paraphrase": "Checking the box is the entire daily ritual — the habit's core interaction."
+          }
+        ]
+      }
+    },
+    {
+      "id": "TOR-03-M5RmMBx",
+      "title": "The application shall remove today's completion when an already-checked \"Done today\" checkbox is clicked again",
+      "traces_to": {
+        "vision": [
+          {
+            "section": "§6 — MVP Scope Summary",
+            "paraphrase": "The checkbox is a toggle: an accidental check-off can be undone and the streak recomputes."
+          }
+        ],
+        "conops": [
+          {
+            "scenario": "S1",
+            "step": 7,
+            "paraphrase": "Check-in state must be correctable in the same session it was made."
+          }
+        ]
+      }
+    },
+    {
+      "id": "TOR-03-zr7VepE",
+      "title": "The application shall record at most one completion per habit per local calendar day, regardless of repeated clicks or reloads",
+      "traces_to": {
+        "vision": [
+          {
+            "section": "§10 — Data Strategy",
+            "paraphrase": "Completions are a set of unique local dates — one entry per day, by construction."
+          }
+        ],
+        "conops": [
+          {
+            "scenario": "S2",
+            "step": 4,
+            "paraphrase": "Repeated interactions with the same day must never inflate the history."
+          }
+        ]
+      }
+    },
+    {
+      "id": "TOR-03-albP5kN",
+      "title": "The application shall record completions as local calendar dates (YYYY-MM-DD) in the user's timezone, not UTC dates",
+      "traces_to": {
+        "vision": [
+          {
+            "section": "§10 — Data Strategy",
+            "paraphrase": "Completion identifiers are local dates in YYYY-MM-DD form."
+          }
+        ],
+        "conops": [
+          {
+            "scenario": "S2",
+            "step": null,
+            "paraphrase": "Streak semantics are local-day based (ConOps §8); UTC day boundaries would misalign check-ins."
+          }
+        ]
+      }
+    }
+  ],
+  "coverage_gaps": []
+}
