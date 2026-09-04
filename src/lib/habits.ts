@@ -5,6 +5,7 @@
 // the only name constraints are non-empty and at most 80 characters.
 
 import { updateState } from './storage';
+import { todayLocalDate } from './streaks';
 import type { AppState, Habit } from './storage';
 
 export const MAX_HABIT_NAME_LENGTH = 80;
@@ -60,6 +61,34 @@ export function archiveHabit(id: string): HabitActionResult {
 // intact.
 export function restoreHabit(id: string): HabitActionResult {
   return setArchived(id, false);
+}
+
+// Record today's completion, or undo it if today is already recorded
+// (Epic m1i25n4). The membership check on today's LOCAL calendar date makes
+// the toggle idempotent: repeated toggles and reloads can never produce a
+// duplicate entry, and the key is always local (TOR-03-albP5kN), never UTC.
+export function toggleToday(id: string): HabitActionResult {
+  const today = todayLocalDate();
+  let changed: Habit | undefined;
+  const result = updateState((state) => {
+    const existing = state.habits.find((habit) => habit.id === id);
+    if (!existing) return state;
+    const completions = existing.completions.includes(today)
+      ? existing.completions.filter((date) => date !== today)
+      : [...existing.completions, today];
+    changed = { ...existing, completions };
+    return {
+      ...state,
+      habits: state.habits.map((habit) => (habit.id === id ? changed! : habit)),
+    };
+  });
+  if (!result.ok) {
+    return { ok: false, reason: result.reason };
+  }
+  if (!changed) {
+    return { ok: false, reason: 'unknown-habit' };
+  }
+  return { ok: true, state: result.state, habit: changed };
 }
 
 function setArchived(id: string, archived: boolean): HabitActionResult {

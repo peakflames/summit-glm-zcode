@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { addHabit, archiveHabit, restoreHabit } from './habits';
+import { addHabit, archiveHabit, restoreHabit, toggleToday } from './habits';
 import { STORAGE_KEY } from './storage';
+import { todayLocalDate } from './streaks';
 import type { AppState, Habit } from './storage';
 
 // Test double for crypto.randomUUID, deterministic across runs.
@@ -171,5 +172,106 @@ describe('archive and restore', () => {
     seedHabit();
     expect(archiveHabit('no-such-id')).toEqual({ ok: false, reason: 'unknown-habit' });
     expect(storedState().habits[0]!.archived).toBe(false);
+  });
+});
+
+// TOR-03-WUQGIE9 (store level)
+// Given a stored habit whose completions do not contain today,
+// When toggleToday is called for its id,
+// Then the stored completions contain exactly one entry for today's local
+// date — persisted immediately, so the checked state survives a reload.
+describe('toggleToday — record', () => {
+  function seedHabit(overrides: Partial<Habit> = {}): Habit {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        schemaVersion: 1,
+        habits: [
+          {
+            id: 'gym-1',
+            name: 'Gym',
+            createdAt: '2026-08-01T08:00:00.000Z',
+            archived: false,
+            completions: [],
+            ...overrides,
+          },
+        ],
+      }),
+    );
+    return JSON.parse(localStorage.getItem(STORAGE_KEY)!).habits[0] as Habit;
+  }
+
+  it('adds exactly one entry for today and persists it', () => {
+    seedHabit({ completions: ['2026-09-01'] });
+
+    const result = toggleToday('gym-1');
+
+    expect(result.ok).toBe(true);
+    const doc = storedState();
+    const today = result.ok ? result.habit.completions.at(-1)! : '';
+    expect(doc.habits[0]!.completions).toEqual(['2026-09-01', today]);
+    expect(doc.habits[0]!.completions.filter((d) => d === today)).toHaveLength(1);
+  });
+
+  // TOR-03-M5RmMBx (store level)
+  // Given a habit with today's completion already recorded,
+  // When toggleToday is called again,
+  // Then today's date is removed from the stored completions.
+  it('removes today when it is already recorded', () => {
+    seedHabit({ completions: ['2026-09-01', '2026-09-03'] });
+    // Seed today by toggling once, then toggle again to undo.
+    expect(toggleToday('gym-1').ok).toBe(true);
+    expect(storedState().habits[0]!.completions).toContain(todayLocalDate());
+
+    const result = toggleToday('gym-1');
+
+    expect(result.ok).toBe(true);
+    const completions = storedState().habits[0]!.completions;
+    expect(completions).not.toContain(todayLocalDate());
+    expect(completions).toEqual(['2026-09-01', '2026-09-03']);
+  });
+
+  // TOR-03-zr7VepE (store level)
+  // Given a habit already has today's date in its completions,
+  // When the page is reloaded and the user toggles off and back on
+  // (each updateState call re-reads localStorage, so the reload is covered
+  // by construction),
+  // Then the stored completions contain exactly one entry for today.
+  it('never produces a duplicate entry for today across toggles and reloads', () => {
+    seedHabit();
+
+    toggleToday('gym-1');
+    toggleToday('gym-1'); // undo
+    toggleToday('gym-1'); // record again after "reload"
+
+    const completions = storedState().habits[0]!.completions;
+    expect(completions.filter((d) => d === todayLocalDate())).toHaveLength(1);
+  });
+
+  // TOR-03-albP5kN (store level)
+  // Given the user's local time is 2026-09-04 23:30 (with the UTC date
+  // possibly already 2026-09-05),
+  // When the user checks "Done today",
+  // Then the stored completion is the string "2026-09-04" — the local
+  // calendar date, whatever the UTC offset maps the instant to.
+  it('records the local calendar date, not the UTC date', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 8, 4, 23, 30));
+    try {
+      seedHabit();
+
+      const result = toggleToday('gym-1');
+
+      expect(result.ok).toBe(true);
+      expect(storedState().habits[0]!.completions).toEqual(['2026-09-04']);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('reports unknown-habit for an id that does not exist', () => {
+    seedHabit();
+    expect(toggleToday('no-such-id')).toEqual({ ok: false, reason: 'unknown-habit' });
+    expect(storedState().habits[0]!.completions).toEqual([]);
   });
 });

@@ -1,7 +1,7 @@
 import { log } from './lib/logger';
 import { emptyState, loadState, saveState } from './lib/storage';
 import type { AppState } from './lib/storage';
-import { archiveHabit, restoreHabit } from './lib/habits';
+import { archiveHabit, restoreHabit, toggleToday } from './lib/habits';
 import type { HabitActionResult } from './lib/habits';
 import { APP_NAME, APP_VERSION } from './lib/version';
 import { dismissBanner, showInlineError, showRecoveryBanner } from './ui/error-banner';
@@ -104,6 +104,7 @@ export function renderApp(): void {
     for (const habit of habits) {
       listEl.append(
         renderHabitRow(habit, {
+          onToggle: (id) => runAction(toggleToday(id)),
           onArchive: (id) => runAction(archiveHabit(id)),
           onRestore: (id) => runAction(restoreHabit(id)),
         }),
