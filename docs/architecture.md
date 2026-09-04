@@ -1,8 +1,9 @@
 # Summit — Architecture Document
 
-> Refreshed to the as-built state by `/peak-workflow:refresh-docs` after Epic tVQOvBV
-> (Project Scaffold & App Shell, completed 2026-09-04). Re-run that command after further
-> epics to keep this document aligned with the code.
+> Refreshed to the as-built state by `/peak-workflow:refresh-docs` after Epics tVQOvBV
+> (Project Scaffold & App Shell) and C1R8qkJ (Persistence Store & Recovery, both completed
+> 2026-09-04). Re-run that command after further epics to keep this document aligned with
+> the code.
 
 ---
 
@@ -57,16 +58,19 @@ N/A — no backend. Application code is organized as ES modules under `src/`:
 ```
 src/
 ├── main.ts              Boot sequence (entry point)
-├── app.ts               Shell render + wiring
-├── styles.css           Single-screen layout
+├── app.ts               Shell render + wiring (boot load / recovery)
+├── styles.css           Single-screen layout + banner styling
 ├── vite-env.d.ts        Ambient declaration for __APP_VERSION__
+├── ui/
+│   └── error-banner.ts  Recovery banner + inline errors (role="alert")
 └── lib/
     ├── version.ts       APP_NAME / APP_VERSION (build-time define)
     ├── logger.ts        [LEVEL] message logger (DEBUG/INFO/WARN/ERROR)
-    └── storage.ts       localStorage read path (write path: Epic C1R8qkJ)
+    ├── types.ts         Stored-document types (Habit, AppState)
+    └── storage.ts       Full store: loadState / saveState / updateState
 ```
 
-Co-located `*.test.ts` files (5 files, 11 tests) mirror the TOR Gherkin from
+Co-located `*.test.ts` files (6 files, 28 tests) mirror the TOR Gherkin from
 `docs/requirements/`.
 
 ---
@@ -88,12 +92,17 @@ No UI framework. `index.html` holds the semantic shell markup (header, add-habit
 Add button, filter section, habit-list section, footer). `renderApp()` in `src/app.ts`
 hydrates that static markup once at boot:
 
-- Queries `#filter`, `#habit-list`, `#footer`, `#habit-name`, `#add-habit`. If any element
-  is missing it logs an error and throws — fail-fast rather than a silent partial render.
+- Queries `#filter`, `#habit-list`, `#footer`, `#habit-name`, `#add-habit`, and
+  `#error-region`. If any element is missing it logs an error and throws — fail-fast rather
+  than a silent partial render.
 - Renders the All/Active/Archived filter `<select>` into `#filter`.
-- Reads state via `readState()` and renders the list area: an empty state ("No habits yet")
-  when `state.habits.length === 0`; habit rows arrive in a later epic.
-- Renders the version footer (`Summit vX.Y.Z`) into `#footer`.
+- Loads state via `loadState()`. On a valid load it renders the list area: an empty state
+  ("No habits yet") when `state.habits.length === 0`, otherwise the hydrated list area
+  (habit rows arrive with the Phase-3 epics). On an unreadable load it renders the recovery
+  banner into `#error-region` instead — unreadable data is never silently treated as an
+  empty state.
+- Renders the version footer (`Summit vX.Y.Z`) into `#footer` and enables the add input/button
+  (the add flow itself is a Phase-3 epic).
 
 There is no router and no re-render loop — the shell is rendered once; later epics will
 re-render individual sections (e.g., the habit list) on state changes.
@@ -117,13 +126,45 @@ literal in the repo.
 All persistence goes through `src/lib/storage.ts`:
 
 - **Namespaced key:** `summit.habits.v1` (`STORAGE_KEY`), holding one JSON document with a
-  `schemaVersion` field (`SCHEMA_VERSION = 1`) so future migrations are possible.
-- **Read path (as built):** `readState()` returns a clean empty state
-  (`{ schemaVersion: 1, habits: [] }`) when the key is absent — no throw, no console error
-  (TOR-06-7l9Trjh).
-- **Not yet built:** the write path, unreadable-data recovery banner (corrupt JSON /
-  unknown schemaVersion → "Start fresh"), and migrations are Epic C1R8qkJ's scope. Until
-  then `readState()` returns the empty state for any key content.
+  `schemaVersion` field (`SCHEMA_VERSION = 1`) so future migrations are possible. The stored
+  document is `{ schemaVersion: 1, habits: Habit[] }` (`src/lib/types.ts`), where each
+  `Habit` carries `id`, `name`, `createdAt` (ISO instant), `archived`, and `completions`
+  (local `YYYY-MM-DD` dates).
+- **Load path:** `loadState()` returns a typed result. An absent key is a clean first run —
+  `{ status: 'ok', state: emptyState() }`, no throw, no console error (TOR-06-7l9Trjh). A
+  present-but-unreadable document returns `{ status: 'unreadable', reason }` with reasons
+  `invalid-json` (corrupt JSON), `unknown-schema-version` (a `schemaVersion` other than 1),
+  or `invalid-shape` (structural validation: a v1 document with malformed habits is not
+  trusted). A valid document returns `{ status: 'ok', state }`.
+- **Write path:** `saveState()` writes the whole document immediately via `setItem`; a
+  failure (e.g., quota exceeded) is surfaced to the caller as
+  `{ ok: false, reason: 'quota-exceeded' }` so the UI can render it — never console-only.
+- **Mutation path (canonical):** `updateState(fn)` is load → mutate → save immediately —
+  no save button, no delay (TOR-06-OcAYtZQ). It refuses to write when the stored document is
+  unreadable (`{ ok: false, reason: 'unreadable-storage' }`), so v1 never rewrites a document
+  it does not understand; recovery ("Start fresh") has to happen first. All Phase-3 UI
+  controls (add/toggle/archive/restore) must go through this path.
+
+### Recovery & user-facing errors
+
+Unreadable stored data is a first-class boot state, handled by `src/ui/error-banner.ts`:
+
+- `showRecoveryBanner()` renders a `role="alert"` banner naming the problem (message varies
+  by reason — corrupted data vs. data written by a newer version) and offering a
+  **"Start fresh"** button (TOR-06-PlcuFFf, TOR-06-CStJTf4). `renderApp()` in `src/app.ts`
+  wires `onReset` to `startFresh()`, which saves a clean empty v1 document, dismisses the
+  banner, and shows the normal empty state (TOR-06-I9rZxQC).
+- `showInlineError()` renders a problem + next-action message for failures that do not offer
+  a reset, e.g. a save refused because browser storage is full
+  ("Couldn't save your changes… Remove archived habits to free space." — TOR-01-yNjDWrJ).
+- `dismissBanner()` clears the message region.
+
+All user-facing errors render in the page (`#error-region` in `index.html`), naming the
+problem AND the next action — never console-only, per the error-message standard in
+`AGENTS.md`.
+
+**Not yet built:** schema migrations (only `schemaVersion: 1` exists; `unknown-schema-version`
+currently routes to the recovery banner).
 
 ### Logging
 
