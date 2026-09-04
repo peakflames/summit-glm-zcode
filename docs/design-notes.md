@@ -1,9 +1,10 @@
 # Summit — Design Decision Notes
 
 > Refreshed by `/peak-workflow:refresh-docs` after Epics tVQOvBV (Project Scaffold & App
-> Shell) and C1R8qkJ (Persistence Store & Recovery, both completed 2026-09-04). Sections 1–5
-> are the original planning decisions from `/peak-workflow:setup` (verified still accurate);
-> section 6+ are as-built decisions consolidated from the epics' session handoffs.
+> Shell), C1R8qkJ (Persistence Store & Recovery), and AQNWtiB (Habit Management UI — all
+> completed 2026-09-04). Sections 1–5 are the original planning decisions from
+> `/peak-workflow:setup` (verified still accurate); section 6+ are as-built decisions
+> consolidated from the epics' session handoffs.
 
 ---
 
@@ -115,7 +116,10 @@ fixed it — avoid downgrading those two packages independently.
 input + Add button, filter/list/footer sections). `renderApp()` in `src/app.ts` runs
 exactly once at boot: it queries the five anchor elements and, if any is missing, logs an
 error and throws instead of rendering a partial UI. There is no router and no re-render
-loop; later epics re-render individual sections on state changes.
+loop; later epics re-render individual sections on state changes. *(As of Epic AQNWtiB:
+`renderApp()` queries four anchors — `#filter`, `#habit-list`, `#footer`, `#error-region` —
+with the add-habit form's three anchors fail-fast-checked by `initHabitForm()`, and the
+habit list does re-render on every mutation and filter change; see decisions 18 and 20.)*
 
 **Rationale:** Static markup keeps the app usable and inspectable before JavaScript runs
 and makes the shell's structure reviewable in one file; fail-fast wiring catches markup
@@ -124,8 +128,9 @@ would be pure overhead.
 
 ## 12. Tests mirror the TOR Gherkin (Epic tVQOvBV)
 
-**Decision:** The vitest suites (28 tests across 6 files, co-located with the code under
-`src/`) are written to exercise each TOR's Given/When/Then from
+**Decision:** The vitest suites (28 tests across 6 files at Epic tVQOvBV's close; 49
+tests across 8 files after Epic AQNWtiB, co-located with the code under `src/`) are
+written to exercise each TOR's Given/When/Then from
 `docs/requirements/*.feature.md`, and the handoff's TOR Coverage table maps every TOR ID to
 its test reference.
 
@@ -140,7 +145,9 @@ load → mutate → save immediately. There is no save button and no delay — w
 `localStorage` on the same tick as the mutation (TOR-06-OcAYtZQ). `updateState` refuses to
 write when the stored document is unreadable (`reason: 'unreadable-storage'`), so v1 never
 rewrites a document it does not understand; recovery ("Start fresh") has to happen first.
-Phase-3 epics (AQNWtiB, m1i25n4, XDc5Tpp) must wire their UI controls through it.
+As built, the AQNWtiB habit actions (`addHabit` / `archiveHabit` / `restoreHabit`, see
+decisions 16–17) route through it; the remaining epics (m1i25n4, XDc5Tpp) must wire their
+UI controls through it.
 
 **Rationale:** A single write-through choke point makes "is the data saved?" trivially
 answerable, eliminates lost-update classes of bugs, and gives the unreadable-data invariant
@@ -178,14 +185,84 @@ it. One banner component with a reason-keyed message keeps the recovery UX ident
 across failure modes while still telling the user what actually happened. The static
 `#error-region` matches the static-shell, hydrated-once pattern (decision 11).
 
+## 16. Duplicate names are deliberate; the only name constraints are non-empty + ≤80 characters (Epic AQNWtiB)
+
+**Decision:** `addHabit(name)` in `src/lib/habits.ts` rejects whitespace-only input
+(`empty-name`) and names longer than `MAX_HABIT_NAME_LENGTH` (80) characters
+(`name-too-long`) — with surrounding whitespace trimmed before both the length check and
+storage, so exactly 80 visible characters is accepted and 81 is not. Duplicate habit names
+are deliberately allowed per the PV §6 recorded decision: each add creates an independent
+`Habit` (distinct `crypto.randomUUID()` id, own `completions` array), rendered as its own
+row.
+
+**Rationale:** Duplicates-as-independent-rows is a product decision recorded in the
+product vision (§6), so a uniqueness constraint would be an unrequested feature. The
+duplicate TOR (TOR-02-f9diV8o) verifies the *independence* of the rows, which at this
+stage is checked at the state level (`src/lib/habits.test.ts:81`) since no UI path in the
+epic can create a completion — the interaction-level re-check lands with the toggle in
+epic m1i25n4.
+
+## 17. Habit store actions return a typed result; one mid-session save-failure handler (Epic AQNWtiB)
+
+**Decision:** `addHabit` / `archiveHabit` / `restoreHabit` each return a
+`HabitActionResult` — `{ ok: true, state, habit }` or `{ ok: false, reason }` with reasons
+`empty-name`, `name-too-long`, `unknown-habit`, `quota-exceeded`, `unreadable-storage`.
+Store-level refusals (quota, unreadable storage) are delegated upward: the form's
+callbacks expose `onSaveFailed`, and `src/app.ts` funnels every refusal into one
+`handleSaveFailure()` that re-checks `loadState()` — an unreadable document gets the
+recovery banner, anything else gets the inline save-failed message.
+
+**Rationale:** Mirrors the `loadState` typed-result pattern (decision 14) and keeps the
+store modules DOM-free. Branching "recovery banner vs. inline error" in exactly one place
+means a refused save is interpreted the same way regardless of which control triggered it,
+and the re-check (rather than trusting the error reason) means a mid-session corruption is
+caught by the same code path as boot-time corruption.
+
+## 18. Add button and Enter submit through one shared path (Epic AQNWtiB)
+
+**Decision:** `initHabitForm()` in `src/ui/habit-form.ts` wires both the Add button click
+and Enter-in-input to the same `submit()` function, which calls `addHabit`, clears the
+input, clears any validation error, and re-renders via the `onChanged` callback on
+success (TOR-02-XOoULU3, TOR-02-w9nrh1o).
+
+**Rationale:** Two entry points into one function cannot drift — one validation behavior,
+one error surface, one input-clearing rule — instead of two event handlers that must be
+kept in sync by convention.
+
+## 19. Validation errors are lazy `role="alert"` elements, removed when cleared (Epic AQNWtiB)
+
+**Decision:** The add-habit form's inline validation error is a `.form-error`
+`<p role="alert">` created only when an error occurs and removed (`errorEl.remove()`)
+when cleared; any new input clears a stale error immediately. The static shell never
+carries a dormant `[role="alert"]` element.
+
+**Rationale:** The recovery-banner logic and the pre-existing TOR-01/06 test suites key on
+alert elements in the page; a permanently-present empty `role="alert"` would collide with
+those selectors and mis-announce to screen readers. Lazy creation keeps the static shell
+free of live-region markup while errors still get announced when they actually appear
+(TOR-02-flxKIoM, TOR-02-lMWubKc).
+
+## 20. Unwired mounts for the checkbox and streak badge; minimal filter behavior (Epic AQNWtiB)
+
+**Decision:** The "Done today" checkbox renders as an unchecked, unwired mount and the
+streak badge renders a hardcoded `0` (`src/ui/habit-row.ts`); the All/Active/Archived
+filter (`#habit-filter` + `visibleHabits()` in `src/app.ts`) is minimal row visibility
+with per-filter empty-state messages ("No habits yet" / "No archived habits").
+
+**Rationale:** Phase decomposition, same precedent as C1R8qkJ's row-rendering deferral:
+the check-in toggle engine, TOR-03 coverage, and the real streak computation are epic
+m1i25n4 scope, and the full filtering/views epic is XDc5Tpp. The minimal filter exists so
+the Archived view can host the restore flow (TOR-02-E0o3IbX). Badge value 0 is correct for
+every habit this epic can create — no UI path can produce a completion yet.
+
 ---
 
-## 16. Known Issues and Deferred Work
+## 21. Known Issues and Deferred Work
 
 - **Favicon 404 (non-blocking):** browsers auto-request `/favicon.ico` and the Vite dev
   server returns a 404, producing one console error per page load. No TOR requires an
   icon; candidate for `/peak-workflow:quick-fix`. (Epic tVQOvBV wrapup; carried through
-  C1R8qkJ.)
+  C1R8qkJ and AQNWtiB.)
 - **`saveState` maps any `setItem` failure to `quota-exceeded`:** a blocked-storage
   `SecurityError` (localStorage disabled) would be mislabeled as "storage is full" in the
   inline message. Cosmetic message-accuracy nit for a future quick-fix. (Epic C1R8qkJ
@@ -193,9 +270,13 @@ across failure modes while still telling the user what actually happened. The st
 - **Schema migrations:** not needed yet — `schemaVersion: 1` is the only version; an
   unknown version currently routes to the recovery banner ("Start fresh"). Migrations are
   future scope when a schema change first ships.
-- **Phase 3 consumes this store:** habit-row rendering, streaks, and the
-  add/toggle/archive/restore controls (AQNWtiB → m1i25n4 → XDc5Tpp) must route mutations
-  through `updateState`.
+- **Unwired row mounts (Epic AQNWtiB):** the "Done today" checkbox and the streak badge
+  (hardcoded 0) are epic m1i25n4 scope — check-in toggle, TOR-03 coverage, real streak
+  engine. When the toggle lands, re-verify duplicate-row independence at the interaction
+  level (currently state-level only, per decision 16).
+- **Minimal filter behavior (Epic AQNWtiB):** row visibility per All/Active/Archived only;
+  the full filtering/views epic is XDc5Tpp. Remaining Phase-3 epics (m1i25n4, XDc5Tpp)
+  must continue routing mutations through `updateState`.
 - **Hosting target:** the production artifact is static `dist/` output; hosting target
   (e.g., GitHub Pages) is TBD.
 - **No CI pipeline:** when one is added, configure it to run the quality gates on every

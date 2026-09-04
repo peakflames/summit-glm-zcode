@@ -1,9 +1,9 @@
 # Summit — Architecture Document
 
 > Refreshed to the as-built state by `/peak-workflow:refresh-docs` after Epics tVQOvBV
-> (Project Scaffold & App Shell) and C1R8qkJ (Persistence Store & Recovery, both completed
-> 2026-09-04). Re-run that command after further epics to keep this document aligned with
-> the code.
+> (Project Scaffold & App Shell), C1R8qkJ (Persistence Store & Recovery), and AQNWtiB
+> (Habit Management UI — all completed 2026-09-04). Re-run that command after further
+> epics to keep this document aligned with the code.
 
 ---
 
@@ -58,19 +58,22 @@ N/A — no backend. Application code is organized as ES modules under `src/`:
 ```
 src/
 ├── main.ts              Boot sequence (entry point)
-├── app.ts               Shell render + wiring (boot load / recovery)
-├── styles.css           Single-screen layout + banner styling
+├── app.ts               Shell render + wiring (filter, list, boot load / recovery)
+├── styles.css           Shell, habit list/form, and banner styling
 ├── vite-env.d.ts        Ambient declaration for __APP_VERSION__
 ├── ui/
-│   └── error-banner.ts  Recovery banner + inline errors (role="alert")
+│   ├── error-banner.ts  Recovery banner + inline errors (role="alert")
+│   ├── habit-form.ts    Add-habit form: submit paths + inline validation errors
+│   └── habit-row.ts     Habit row rendering (name, streak badge, checkbox, action)
 └── lib/
     ├── version.ts       APP_NAME / APP_VERSION (build-time define)
     ├── logger.ts        [LEVEL] message logger (DEBUG/INFO/WARN/ERROR)
     ├── types.ts         Stored-document types (Habit, AppState)
+    ├── habits.ts        Store actions: addHabit / archiveHabit / restoreHabit
     └── storage.ts       Full store: loadState / saveState / updateState
 ```
 
-Co-located `*.test.ts` files (6 files, 28 tests) mirror the TOR Gherkin from
+Co-located `*.test.ts` files (8 files, 49 tests) mirror the TOR Gherkin from
 `docs/requirements/`.
 
 ---
@@ -88,24 +91,50 @@ Co-located `*.test.ts` files (6 files, 28 tests) mirror the TOR Gherkin from
 
 ### Rendering approach
 
-No UI framework. `index.html` holds the semantic shell markup (header, add-habit input +
-Add button, filter section, habit-list section, footer). `renderApp()` in `src/app.ts`
-hydrates that static markup once at boot:
+No UI framework. `index.html` holds the semantic shell markup (header, add-habit section
+`.add-habit` with the `#habit-name` input + `#add-habit` button, error region, filter
+section, habit-list section, footer). `renderApp()` in `src/app.ts` hydrates that static
+markup once at boot:
 
-- Queries `#filter`, `#habit-list`, `#footer`, `#habit-name`, `#add-habit`, and
-  `#error-region`. If any element is missing it logs an error and throws — fail-fast rather
-  than a silent partial render.
-- Renders the All/Active/Archived filter `<select>` into `#filter`.
-- Loads state via `loadState()`. On a valid load it renders the list area: an empty state
-  ("No habits yet") when `state.habits.length === 0`, otherwise the hydrated list area
-  (habit rows arrive with the Phase-3 epics). On an unreadable load it renders the recovery
-  banner into `#error-region` instead — unreadable data is never silently treated as an
-  empty state.
-- Renders the version footer (`Summit vX.Y.Z`) into `#footer` and enables the add input/button
-  (the add flow itself is a Phase-3 epic).
+- Queries `#filter`, `#habit-list`, `#footer`, and `#error-region`. If any element is
+  missing it logs an error and throws — fail-fast rather than a silent partial render.
+  (`initHabitForm()` in `src/ui/habit-form.ts` performs the same fail-fast check for the
+  form's own anchors: `#habit-name`, `#add-habit`, and the `.add-habit` root.)
+- Renders the All/Active/Archived filter `<select>` (`#habit-filter`, with an
+  `aria-label`) into `#filter`.
+- Loads state via `loadState()`. On a valid load it renders the list area: a per-filter
+  empty state ("No habits yet" for All/Active, "No archived habits" for Archived) when
+  nothing matches the current filter, otherwise one habit row per visible habit via
+  `renderHabitRow()`. On an unreadable load it renders the recovery banner into
+  `#error-region` instead — unreadable data is never silently treated as an empty state.
+- Wires the add-habit form via `initHabitForm()` (see below) and renders the version
+  footer (`Summit vX.Y.Z`) into `#footer`.
 
-There is no router and no re-render loop — the shell is rendered once; later epics will
-re-render individual sections (e.g., the habit list) on state changes.
+There is no router. The list section re-renders from an in-memory state mirror on every
+mutation and filter change: successful store actions update the mirror and re-render, and
+the filter `change` event re-renders from the selected filter value.
+
+### Habit rows (Epic AQNWtiB)
+
+Each row (`.habit-row`, keyed by `data-habit-id`) carries a "Done today" checkbox
+(`aria-label` per habit), the habit name (`.habit-name`), a streak badge
+(`.streak-badge`), and one action button — **Archive** for active habits, **Restore** for
+archived ones. The checkbox and the streak badge are deliberate unwired mounts in this
+epic: the check-in toggle engine and real streak computation land with epic m1i25n4, so
+the badge shows 0 — the correct value for every habit the UI can create (no completions
+are possible yet).
+
+### Add-habit form (Epic AQNWtiB)
+
+`initHabitForm()` in `src/ui/habit-form.ts` wires the static input + Add button. Both the
+button click and Enter in the input submit through one shared `submit()` path, which calls
+`addHabit()`, clears the input, and re-renders via the `onChanged` callback on success.
+Validation errors (empty name, name over 80 characters) render inline next to the input as
+a lazily created `role="alert"` element (`.form-error`) naming the problem AND the next
+action; the element is removed when cleared so the shell never carries a dormant
+`[role="alert"]` that recovery-banner selectors could mistake for a real alert. Any input
+clears a stale error. Store-level refusals (quota, unreadable storage) are delegated to
+the app's save-failure handler (see Recovery below).
 
 ### Version plumbing
 
@@ -142,8 +171,16 @@ All persistence goes through `src/lib/storage.ts`:
 - **Mutation path (canonical):** `updateState(fn)` is load → mutate → save immediately —
   no save button, no delay (TOR-06-OcAYtZQ). It refuses to write when the stored document is
   unreadable (`{ ok: false, reason: 'unreadable-storage' }`), so v1 never rewrites a document
-  it does not understand; recovery ("Start fresh") has to happen first. All Phase-3 UI
-  controls (add/toggle/archive/restore) must go through this path.
+  it does not understand; recovery ("Start fresh") has to happen first.
+- **Habit actions (Epic AQNWtiB):** `src/lib/habits.ts` builds on that path with
+  `addHabit(name)` (trims, validates non-empty and ≤ `MAX_HABIT_NAME_LENGTH` = 80
+  characters — duplicates deliberately allowed per PV §6 — then appends a new `Habit` with
+  a `crypto.randomUUID()` id, ISO `createdAt`, `archived: false`, empty `completions`) and
+  `archiveHabit(id)` / `restoreHabit(id)` (flip the `archived` flag, `completions`
+  untouched). Each returns a typed result: `{ ok: true, state, habit }` or
+  `{ ok: false, reason }` with reasons `empty-name`, `name-too-long`, `unknown-habit`,
+  `quota-exceeded`, `unreadable-storage`. The check-in toggle will join this path with
+  epic m1i25n4.
 
 ### Recovery & user-facing errors
 
@@ -158,6 +195,13 @@ Unreadable stored data is a first-class boot state, handled by `src/ui/error-ban
   a reset, e.g. a save refused because browser storage is full
   ("Couldn't save your changes… Remove archived habits to free space." — TOR-01-yNjDWrJ).
 - `dismissBanner()` clears the message region.
+- **Mid-session save failures (Epic AQNWtiB):** a refused save from any habit action
+  (`addHabit` / `archiveHabit` / `restoreHabit`) routes to one handler in `src/app.ts`
+  (`handleSaveFailure`), which re-checks `loadState()`: an unreadable document gets the
+  recovery banner (data became unreadable mid-session), otherwise the inline
+  "storage is full" message renders. Form validation errors use their own lazily created
+  `role="alert"` element next to the input rather than `#error-region` (see the Add-habit
+  form section above).
 
 All user-facing errors render in the page (`#error-region` in `index.html`), naming the
 problem AND the next action — never console-only, per the error-message standard in
