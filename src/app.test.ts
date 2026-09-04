@@ -215,17 +215,212 @@ describe('in-page error message on save failure', () => {
   it('names the problem and the next action when Start fresh cannot save', () => {
     localStorage.setItem(STORAGE_KEY, '{not valid json');
     boot();
+    // vi.restoreAllMocks() does not reliably undo a mockImplementation on
+    // happy-dom's localStorage (the throwing mock leaked into later tests),
+    // so the spy is restored explicitly in a finally, unconditionally.
     const setItemSpy = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
       throw new DOMException('The quota has been exceeded.', 'QuotaExceededError');
     });
+    try {
+      document.querySelector<HTMLButtonElement>('.error-banner-action')!.click();
 
-    document.querySelector<HTMLButtonElement>('.error-banner-action')!.click();
+      expect(setItemSpy).toHaveBeenCalled();
+      const alert = document.querySelector('[role="alert"]');
+      expect(alert).not.toBeNull();
+      const text = alert!.textContent ?? '';
+      expect(text).toContain('storage is full');
+      expect(text).toContain('Remove archived habits to free space');
+    } finally {
+      setItemSpy.mockRestore();
+    }
+  });
+});
 
-    expect(setItemSpy).toHaveBeenCalled();
-    const alert = document.querySelector('[role="alert"]');
-    expect(alert).not.toBeNull();
-    const text = alert!.textContent ?? '';
-    expect(text).toContain('storage is full');
-    expect(text).toContain('Remove archived habits to free space');
+// Epic AQNWtiB — habit management UI.
+const SHELL_FIXTURE = `
+  <main class="shell">
+    <header class="shell-header"><h1>Summit</h1></header>
+    <section class="add-habit" aria-label="Add a habit">
+      <input id="habit-name" name="habit-name" type="text" placeholder="Add habit" aria-label="Habit name" autocomplete="off" />
+      <button id="add-habit" type="button">Add</button>
+    </section>
+    <section class="error-region" id="error-region" aria-label="Messages"></section>
+    <section class="filter" id="filter" aria-label="Filter habits"></section>
+    <section class="habit-list" id="habit-list" aria-label="Habit list"></section>
+    <footer class="shell-footer" id="footer"></footer>
+  </main>
+`;
+
+function bootShell(): void {
+  document.body.innerHTML = SHELL_FIXTURE;
+  renderApp();
+}
+
+function addHabitViaForm(name: string): void {
+  const input = document.querySelector<HTMLInputElement>('#habit-name')!;
+  input.value = name;
+  document.querySelector<HTMLButtonElement>('#add-habit')!.click();
+}
+
+function rowNames(): string[] {
+  return [...document.querySelectorAll('.habit-row .habit-name')].map(
+    (el) => el.textContent ?? '',
+  );
+}
+
+function setFilter(value: 'all' | 'active' | 'archived'): void {
+  const select = document.querySelector<HTMLSelectElement>('#habit-filter')!;
+  select.value = value;
+  select.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+// TOR-02-XOoULU3 (UI level)
+// Given the Active view is open,
+// When the user types "Read 20 minutes" into the "Add habit" input and clicks "Add",
+// Then a new row appears showing the name, a streak badge of 0, an unchecked
+// "Done today" checkbox, and an "Archive" action — and the input is cleared.
+describe('habit list: add flow', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.restoreAllMocks();
+    bootShell();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('adding a habit shows a complete row immediately and clears the input', () => {
+    addHabitViaForm('Read 20 minutes');
+
+    expect(rowNames()).toEqual(['Read 20 minutes']);
+    const row = document.querySelector('.habit-row')!;
+    const badge = row.querySelector<HTMLElement>('.streak-badge')!;
+    expect(badge.textContent).toBe('0');
+    const checkbox = row.querySelector<HTMLInputElement>('.habit-done')!;
+    expect(checkbox.checked).toBe(false);
+    const action = row.querySelector<HTMLButtonElement>('.habit-action')!;
+    expect(action.textContent).toBe('Archive');
+    expect(document.querySelector<HTMLInputElement>('#habit-name')!.value).toBe('');
+  });
+
+  // TOR-02-G8b7pmU (UI level)
+  // Given the habit "Read 20 minutes" was just added,
+  // When the page is reloaded,
+  // Then the row is present in the Active view with its name unchanged.
+  it('a newly added habit survives a page reload', () => {
+    addHabitViaForm('Read 20 minutes');
+
+    bootShell(); // simulate reload: fresh DOM, same storage
+
+    setFilter('active');
+    expect(rowNames()).toEqual(['Read 20 minutes']);
+  });
+
+  // TOR-02-f9diV8o (UI level)
+  // Given a habit named "Read 20 minutes" already exists,
+  // When the user adds another habit also named "Read 20 minutes",
+  // Then the list shows two rows named "Read 20 minutes".
+  it('duplicate names show two independent rows', () => {
+    addHabitViaForm('Read 20 minutes');
+    addHabitViaForm('Read 20 minutes');
+
+    expect(rowNames()).toEqual(['Read 20 minutes', 'Read 20 minutes']);
+    const ids = [...document.querySelectorAll('.habit-row')].map(
+      (row) => (row as HTMLElement).dataset.habitId,
+    );
+    expect(new Set(ids).size).toBe(2);
+  });
+});
+
+// TOR-02-c7UnNH0 (UI level)
+// Given the Active view shows a "Gym" row,
+// When the user clicks "Archive" on the Gym row,
+// Then the Gym row no longer appears in the Active view and the stored habit
+// has archived set to true with its completions unchanged.
+describe('habit list: archive and restore', () => {
+  function seedGym(archived: boolean): void {
+    localStorage.setItem(
+      'summit.habits.v1',
+      JSON.stringify({
+        schemaVersion: 1,
+        habits: [
+          {
+            id: 'gym-1',
+            name: 'Gym',
+            createdAt: '2026-08-01T08:00:00.000Z',
+            archived,
+            completions: ['2026-09-01', '2026-09-02', '2026-09-03', '2026-09-04'],
+          },
+        ],
+      }),
+    );
+  }
+
+  function storedGym(): { archived: boolean; completions: string[] } {
+    const doc = JSON.parse(localStorage.getItem('summit.habits.v1')!) as {
+      habits: { id: string; archived: boolean; completions: string[] }[];
+    };
+    return doc.habits[0]!;
+  }
+
+  beforeEach(() => {
+    localStorage.clear();
+    vi.restoreAllMocks();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('Archive removes the row from the Active view and preserves completions', () => {
+    seedGym(false);
+    bootShell();
+    setFilter('active');
+    expect(rowNames()).toEqual(['Gym']);
+
+    document.querySelector<HTMLButtonElement>('.habit-row .habit-action')!.click();
+
+    expect(rowNames()).toEqual([]);
+    expect(document.querySelector('#habit-list')?.textContent).toContain('No habits yet');
+    const gym = storedGym();
+    expect(gym.archived).toBe(true);
+    expect(gym.completions).toEqual([
+      '2026-09-01',
+      '2026-09-02',
+      '2026-09-03',
+      '2026-09-04',
+    ]);
+  });
+
+  // TOR-02-E0o3IbX (UI level)
+  // Given the habit "Gym" is archived with four completions,
+  // When the user opens the Archived filter and clicks "Restore",
+  // Then Gym leaves the Archived view, reappears in Active, and keeps its
+  // completions with archived set to false.
+  it('Restore from the Archived view returns the habit to Active with history intact', () => {
+    seedGym(true);
+    bootShell();
+    setFilter('archived');
+    expect(rowNames()).toEqual(['Gym']);
+    expect(
+      document.querySelector<HTMLButtonElement>('.habit-row .habit-action')!.textContent,
+    ).toBe('Restore');
+
+    document.querySelector<HTMLButtonElement>('.habit-row .habit-action')!.click();
+
+    expect(rowNames()).toEqual([]);
+    expect(document.querySelector('#habit-list')?.textContent).toContain('No archived habits');
+
+    setFilter('active');
+    expect(rowNames()).toEqual(['Gym']);
+    const gym = storedGym();
+    expect(gym.archived).toBe(false);
+    expect(gym.completions).toEqual([
+      '2026-09-01',
+      '2026-09-02',
+      '2026-09-03',
+      '2026-09-04',
+    ]);
   });
 });
