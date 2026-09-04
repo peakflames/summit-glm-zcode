@@ -1,0 +1,73 @@
+:root {
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color: #1c2733;
+  background: #f7f9fb;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+.shell {
+  max-width: 32rem;
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-height: 100vh;
+}
+
+.shell-header h1 {
+  margin: 0;
+  font-size: 1.6rem;
+}
+
+.add-habit {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.add-habit input {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #b8c4cf;
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
+.add-habit button {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.filter {
+  font-size: 0.95rem;
+}
+
+.habit-list {
+  flex: 1;
+}
+
+.empty-state {
+  color: #5c6b7a;
+  text-align: center;
+  padding: 2rem 0;
+}
+
+.shell-footer {
+  font-size: 0.85rem;
+  color: #5c6b7a;
+  border-top: 1px solid #dde4ea;
+  padding-top: 0.75rem;
+}
