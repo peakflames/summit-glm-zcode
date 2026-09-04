@@ -1,7 +1,7 @@
 # Epic AQNWtiB: Habit Management UI
 
 **Phase:** 3 — Frontend
-**Status:** Implemented — 2026-09-04
+**Status:** Complete — 2026-09-04
 **Dependencies:** Epic tVQOvBV (Project Scaffold & App Shell — shell and form markup), Epic C1R8qkJ (Persistence Store & Recovery — mutations persist immediately)
 
 > **Brand:** Use the project's brand guidelines skill for the habit rows and inline validation errors if one is configured.
