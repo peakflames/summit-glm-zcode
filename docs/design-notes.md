@@ -1,9 +1,9 @@
 # Summit — Design Decision Notes
 
-> Refreshed by `/peak-workflow:refresh-docs` after Epic tVQOvBV (Project Scaffold & App
-> Shell, completed 2026-09-04). Sections 1–5 are the original planning decisions from
-> `/peak-workflow:setup` (verified still accurate); sections 6+ are as-built decisions
-> consolidated from the epic's session handoffs.
+> Refreshed by `/peak-workflow:refresh-docs` after Epics tVQOvBV (Project Scaffold & App
+> Shell) and C1R8qkJ (Persistence Store & Recovery, both completed 2026-09-04). Sections 1–5
+> are the original planning decisions from `/peak-workflow:setup` (verified still accurate);
+> section 6+ are as-built decisions consolidated from the epics' session handoffs.
 
 ---
 
@@ -83,19 +83,19 @@ human-readable line `[LEVEL] message` through the matching console method
 trivially parseable and the level-to-console-method mapping 1:1 makes log assertions in
 tests and console filtering in the browser both straightforward.
 
-## 9. Namespaced storage key with schemaVersion; read path first (Epic tVQOvBV)
+## 9. Namespaced storage key with schemaVersion; full store as built (Epic tVQOvBV, C1R8qkJ)
 
 **Decision:** All persistence lives under the single key `summit.habits.v1`
 (`STORAGE_KEY`), holding one JSON document with a `schemaVersion` field
-(`SCHEMA_VERSION = 1`). Epic tVQOvBV implemented only the read path: `readState()` returns
-a clean empty state when the key is absent — no throw, no console error (TOR-06-7l9Trjh).
-The write path, unreadable-data recovery banner, and migrations are deliberately deferred
-to Epic C1R8qkJ.
+(`SCHEMA_VERSION = 1`). Epic tVQOvBV built the read path (absent key → clean empty state,
+TOR-06-7l9Trjh); Epic C1R8qkJ completed the store: `loadState` (validated, typed load
+result), `saveState` (immediate whole-document write), and `updateState` (canonical
+mutation path). See sections 13–15 for the C1R8qkJ decisions.
 
 **Rationale:** Namespacing + schema versioning make future migrations possible without a
-backend (decision 2). Building the read path first lets the app shell render an honest
-empty state end to end before any mutation logic exists, and keeps each epic's scope
-small and independently verifiable.
+backend (decision 2). Building the read path first let the app shell render an honest empty
+state end to end before any mutation logic existed, and keeping each epic's scope small kept
+it independently verifiable.
 
 ## 10. Dev-only dependencies, zero runtime dependencies (Epic tVQOvBV)
 
@@ -124,24 +124,78 @@ would be pure overhead.
 
 ## 12. Tests mirror the TOR Gherkin (Epic tVQOvBV)
 
-**Decision:** The 11 vitest tests (5 files, co-located with the code under `src/`) are
-written to exercise each TOR's Given/When/Then from `docs/requirements/*.feature.md`, and
-the handoff's TOR Coverage table maps every TOR ID to its test reference.
+**Decision:** The vitest suites (28 tests across 6 files, co-located with the code under
+`src/`) are written to exercise each TOR's Given/When/Then from
+`docs/requirements/*.feature.md`, and the handoff's TOR Coverage table maps every TOR ID to
+its test reference.
 
 **Rationale:** Tracing tests directly to TOR IDs makes `npm run test` a repeatable
 verification of the requirements baseline, and makes gaps visible at a glance during
 wrapup.
 
+## 13. `updateState` is the one canonical mutation path (Epic C1R8qkJ)
+
+**Decision:** Every state mutation goes through `updateState(fn)` in `src/lib/storage.ts`:
+load → mutate → save immediately. There is no save button and no delay — writes hit
+`localStorage` on the same tick as the mutation (TOR-06-OcAYtZQ). `updateState` refuses to
+write when the stored document is unreadable (`reason: 'unreadable-storage'`), so v1 never
+rewrites a document it does not understand; recovery ("Start fresh") has to happen first.
+Phase-3 epics (AQNWtiB, m1i25n4, XDc5Tpp) must wire their UI controls through it.
+
+**Rationale:** A single write-through choke point makes "is the data saved?" trivially
+answerable, eliminates lost-update classes of bugs, and gives the unreadable-data invariant
+one enforcement point instead of one per UI control. Refusing to overwrite unreadable data
+protects a document v1 can't parse from being destroyed by a blind empty-state write.
+
+## 14. `loadState` returns a typed result; unreadable data is never silently empty (Epic C1R8qkJ)
+
+**Decision:** `loadState()` returns `{ status: 'ok', state }` or
+`{ status: 'unreadable', reason }` with reasons `invalid-json` (corrupt JSON),
+`unknown-schema-version` (a `schemaVersion` other than 1), or `invalid-shape`. Structural
+validation is enforced: a document claiming `schemaVersion: 1` but carrying malformed
+habits is `invalid-shape`, not trusted. Only an absent key yields a clean empty state
+(TOR-06-7l9Trjh preserved — the old `readState()` was replaced and its test updated).
+
+**Rationale:** Silently returning an empty state on unreadable data would destroy the
+user's history the moment any mutation wrote through. The typed result forces the boot
+code to branch on recoverability explicitly, and structural validation means a
+half-written or hand-edited v1 document is treated as suspect rather than trusted.
+
+## 15. In-page recovery banner and inline errors (Epic C1R8qkJ)
+
+**Decision:** `src/ui/error-banner.ts` renders all user-facing errors into the static
+`#error-region` in `index.html` — never console-only, per the error-message standard.
+`showRecoveryBanner()` is the unreadable-data path: a `role="alert"` banner whose message
+varies by reason (corrupted data vs. data written by a newer version) but always names the
+problem and offers the same **"Start fresh"** action, which resets to a clean empty v1
+document (TOR-06-PlcuFFf, TOR-06-CStJTf4, TOR-06-I9rZxQC). `showInlineError()` covers
+failures without a reset, e.g. a quota-refused save ("Couldn't save your changes… Remove
+archived habits to free space." — TOR-01-yNjDWrJ); `dismissBanner()` clears the region.
+
+**Rationale:** Unreadable storage is a first-class boot state, not an edge case — an
+in-page, screen-reader-announced (`role="alert"`) banner is the only honest surface for
+it. One banner component with a reason-keyed message keeps the recovery UX identical
+across failure modes while still telling the user what actually happened. The static
+`#error-region` matches the static-shell, hydrated-once pattern (decision 11).
+
 ---
 
-## 13. Known Issues and Deferred Work
+## 16. Known Issues and Deferred Work
 
 - **Favicon 404 (non-blocking):** browsers auto-request `/favicon.ico` and the Vite dev
   server returns a 404, producing one console error per page load. No TOR requires an
-  icon; candidate for `/peak-workflow:quick-fix`. (Epic tVQOvBV wrapup)
-- **Storage write path, recovery banner, migrations:** intentionally not implemented in
-  Epic tVQOvBV — Epic C1R8qkJ's scope (corrupt JSON / unknown schemaVersion → "Start
-  fresh" banner). Until then `readState()` returns the empty state for any key content.
+  icon; candidate for `/peak-workflow:quick-fix`. (Epic tVQOvBV wrapup; carried through
+  C1R8qkJ.)
+- **`saveState` maps any `setItem` failure to `quota-exceeded`:** a blocked-storage
+  `SecurityError` (localStorage disabled) would be mislabeled as "storage is full" in the
+  inline message. Cosmetic message-accuracy nit for a future quick-fix. (Epic C1R8qkJ
+  wrapup.)
+- **Schema migrations:** not needed yet — `schemaVersion: 1` is the only version; an
+  unknown version currently routes to the recovery banner ("Start fresh"). Migrations are
+  future scope when a schema change first ships.
+- **Phase 3 consumes this store:** habit-row rendering, streaks, and the
+  add/toggle/archive/restore controls (AQNWtiB → m1i25n4 → XDc5Tpp) must route mutations
+  through `updateState`.
 - **Hosting target:** the production artifact is static `dist/` output; hosting target
   (e.g., GitHub Pages) is TBD.
 - **No CI pipeline:** when one is added, configure it to run the quality gates on every
