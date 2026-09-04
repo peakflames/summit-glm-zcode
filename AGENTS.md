@@ -186,17 +186,18 @@ A successful build (compile) does NOT equal working code. The workflow MUST be:
 
 ## Git Workflow
 
-- **Long-lived branch:** `main` only — this reference project intentionally has no `develop`;
-  all work merges to `main`.
+- **Long-lived branches:** `develop` and `main`. `develop` is the integration branch — all
+  docs, epic, and hotfix work merges here, and epics start from it. `main` holds releases and
+  is created from `develop` at the first release.
 - **Docs branches:** `docs/{task-short-name}` — product vision, requirements baseline, and
-  implementation plan work (created by `/peak-workflow:discover`); merged to `main` with
+  implementation plan work (created by `/peak-workflow:discover`); merged to `develop` with
   `--no-ff` as the approval signature for the baseline.
 - **Epic branches:** `feature/epic-<id>-<short-name>` where `<id>` is either a legacy integer
   (e.g., `7` or `6.5`) or a 7-character alphanumeric ID (e.g., `a3f2K7p`), and `<short-name>`
   is derived from the epic spec filename (`epic-a3f2K7p-user-auth.md` →
-  `feature/epic-a3f2K7p-user-auth`).
+  `feature/epic-a3f2K7p-user-auth`). Created from `develop`; merged back to `develop`.
 - **Quick-fix branches:** `hotfix/issue-<N>-<slug>` when tied to a GitHub issue, or
-  `hotfix/<slug>` otherwise.
+  `hotfix/<slug>` otherwise. Branch from `develop` (or `main` for fixes to released code).
 - **Merges:** always `--no-ff` to preserve history.
 - **Pushes:** ask the user before pushing to origin.
 - **Never commit:** `.env` / `.env.*`, `node_modules/`, `dist/`, OS files (`.DS_Store`),
@@ -204,23 +205,28 @@ A successful build (compile) does NOT equal working code. The workflow MUST be:
 
 ## Release Protocol
 
-Single-branch adaptation — releases happen on `main` (there is no `develop` to merge from).
+Releases flow `develop` → `main`.
 
-**Prerequisites:** On `main` with a clean working tree; all epic branches merged with `--no-ff`.
+**Prerequisites:** `main` created from `develop` (first release) or up to date; `develop` has
+a clean working tree; all epic branches merged with `--no-ff`.
 
-1. **Finalize CHANGELOG** — Change `## [X.Y.Z] — UNDER DEVELOPMENT` → `## [X.Y.Z] — DD-MMM-YYYY`
-   in `CHANGELOG.md`. Commit: `chore: release vX.Y.Z`
-2. **Tag the release** (on `main`):
+1. **Finalize CHANGELOG on `develop`** — Change `## [X.Y.Z] — UNDER DEVELOPMENT` →
+   `## [X.Y.Z] — DD-MMM-YYYY` in `CHANGELOG.md`. Commit: `chore: release vX.Y.Z`
+2. **Merge to `main`**:
+   ```bash
+   git checkout main && git merge develop --no-ff -m "Merge branch 'develop' into main for release vX.Y.Z"
+   ```
+3. **Tag the release** (on `main`):
    ```bash
    git tag -a vX.Y.Z -m "Release vX.Y.Z — Brief description"
    ```
-3. **Post-release version bump** (on `main`):
+4. **Post-release version bump** (on `develop`):
    - Bump `package.json#version` to the next version
    - Add a fresh `## [Unreleased]` section to `CHANGELOG.md`
    - Commit: `chore: bump version for next development cycle`
-4. **Push** (ASK USER FIRST):
+5. **Push** (ASK USER FIRST):
    ```bash
-   git push origin main && git push origin vX.Y.Z
+   git push origin main develop && git push origin vX.Y.Z
    ```
 
 **Note:** No CI pipeline exists yet — when one is added, configure it to run the quality
