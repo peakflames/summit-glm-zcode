@@ -51,6 +51,46 @@ body {
   cursor: pointer;
 }
 
+.error-region:empty {
+  display: none;
+}
+
+.error-banner {
+  border: 1px solid #e2a33d;
+  border-radius: 6px;
+  background: #fdf6e9;
+  padding: 0.75rem 1rem;
+}
+
+.error-banner--recovery {
+  border-color: #d9534f;
+  background: #fdecec;
+}
+
+.error-banner--inline {
+  border-color: #d9534f;
+  background: #fdecec;
+}
+
+.error-banner-message {
+  margin: 0 0 0.5rem;
+  color: #7a2e2c;
+}
+
+.error-banner--recovery .error-banner-message {
+  color: #1c2733;
+}
+
+.error-banner-action {
+  padding: 0.4rem 0.9rem;
+  border: none;
+  border-radius: 6px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
 .filter {
   font-size: 0.95rem;
 }

@@ -22,6 +22,7 @@ describe('startup log stamp', () => {
           <input id="habit-name" name="habit-name" type="text" placeholder="Add habit" aria-label="Habit name" autocomplete="off" />
           <button id="add-habit" type="button">Add</button>
         </section>
+        <section class="error-region" id="error-region" aria-label="Messages"></section>
         <section class="filter" id="filter" aria-label="Filter habits"></section>
         <section class="habit-list" id="habit-list" aria-label="Habit list"></section>
         <footer class="shell-footer" id="footer"></footer>
