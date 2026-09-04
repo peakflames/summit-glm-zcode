@@ -13,6 +13,10 @@ dist-ssr/
 # Local scratch (session handoffs, unversioned working files)
 tmp/
 
+# Tool working artifacts
+.playwright-cli/
+.zcode/
+
 # Logs
 logs/
 *.log
