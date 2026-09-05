@@ -1,8 +1,9 @@
 // Habit row rendering (Epic AQNWtiB, wired in Epic m1i25n4; archived tag added
-// in Epic XDc5Tpp). One row per habit: name, "Archived" tag when the habit is
-// archived, streak badge, "Done today" checkbox, and the archive/restore
-// action. The row is a pure function of the habit — the checkbox reflects the
-// stored completions and the badge comes from streaks.ts — so every render
+// in Epic XDc5Tpp; row UI parity in Epic lfstJmm). One row per habit: the
+// "Done today" toggle button, name, "Archived" tag when the habit is archived,
+// streak badge with "DAY STREAK" caption, and the archive/restore action. The
+// row is a pure function of the habit — the button's pressed state reflects
+// the stored completions and the badge comes from streaks.ts — so every render
 // (initial, post-toggle, restored) is history-derived with no special cases.
 
 import type { Habit } from '../lib/storage';
@@ -22,12 +23,20 @@ export function renderHabitRow(habit: Habit, callbacks: HabitRowCallbacks): HTML
   row.dataset.habitId = habit.id;
 
   const today = todayLocalDate();
-  const done = document.createElement('input');
-  done.type = 'checkbox';
-  done.className = 'habit-done';
-  done.checked = habit.completions.includes(today);
+  // TOR-03-WUQGIE9 / TOR-03-M5RmMBx (Epic lfstJmm): the check-in control is a
+  // toggle button, not a checkbox. pf-btn--secondary supplies the neutral
+  // outlined undone treatment; the done state is Summit CSS on
+  // .habit-done-btn[aria-pressed="true"] (TOR-07-OgGR571) — success green,
+  // never the flame accent: the Add button is the one hot element
+  // (TOR-07-EXjNoVz).
+  const done = document.createElement('button');
+  done.type = 'button';
+  done.className = 'habit-done-btn pf-btn pf-btn--secondary';
+  const isDone = habit.completions.includes(today);
+  done.setAttribute('aria-pressed', String(isDone));
   done.setAttribute('aria-label', `Done today: ${habit.name}`);
-  done.addEventListener('change', () => callbacks.onToggle(habit.id));
+  done.textContent = isDone ? 'Done ✓' : 'Done today';
+  done.addEventListener('click', () => callbacks.onToggle(habit.id));
   row.append(done);
 
   const name = document.createElement('span');
@@ -44,11 +53,21 @@ export function renderHabitRow(habit: Habit, callbacks: HabitRowCallbacks): HTML
     row.append(tag);
   }
 
+  // TOR-04-rknaMfI (Epic lfstJmm): every badge shows the streak number with a
+  // "DAY STREAK" caption directly beneath it, on active and archived rows
+  // alike. The number keeps the amber display-face hero styling
+  // (TOR-07-pa7ak24) and the caption carries the mono caption ramp.
   const streak = String(currentStreak(habit.completions, today));
   const badge = document.createElement('span');
   badge.className = 'streak-badge';
   badge.setAttribute('aria-label', `Current streak: ${streak}`);
-  badge.textContent = streak;
+  const number = document.createElement('span');
+  number.className = 'streak-number';
+  number.textContent = streak;
+  const caption = document.createElement('span');
+  caption.className = 'streak-caption';
+  caption.textContent = 'DAY STREAK';
+  badge.append(number, caption);
   row.append(badge);
 
   const action = document.createElement('button');
