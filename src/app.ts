@@ -6,63 +6,12 @@ import type { HabitActionResult } from './lib/habits';
 import { APP_NAME, APP_VERSION } from './lib/version';
 import { dismissBanner, showInlineError, showRecoveryBanner } from './ui/error-banner';
 import { initHabitForm } from './ui/habit-form';
-import { renderHabitRow } from './ui/habit-row';
-
-type FilterValue = 'all' | 'active' | 'archived';
-
-const FILTER_OPTIONS: { value: FilterValue; label: string }[] = [
-  { value: 'all', label: 'All' },
-  { value: 'active', label: 'Active' },
-  { value: 'archived', label: 'Archived' },
-];
-
-const EMPTY_MESSAGES: Record<FilterValue, string> = {
-  all: 'No habits yet',
-  active: 'No habits yet',
-  archived: 'No archived habits',
-};
+import { renderHabitList } from './ui/habit-list';
+import { renderFilterBar, type FilterValue } from './ui/filter-bar';
 
 // Names the problem AND the next user action, per the error-message standard.
 const SAVE_FAILED_MESSAGE =
   'Couldn\u2019t save your changes: browser storage is full. Remove archived habits to free space.';
-
-function renderFilterControl(root: HTMLElement, onFilterChange: () => void): void {
-  const label = document.createElement('label');
-  label.textContent = 'Filter: ';
-  const select = document.createElement('select');
-  select.id = 'habit-filter';
-  select.setAttribute('aria-label', 'Filter habits by status');
-  for (const option of FILTER_OPTIONS) {
-    const el = document.createElement('option');
-    el.value = option.value;
-    el.textContent = option.label;
-    select.append(el);
-  }
-  select.addEventListener('change', onFilterChange);
-  label.append(select);
-  root.append(label);
-}
-
-function currentFilter(): FilterValue {
-  const select = document.querySelector<HTMLSelectElement>('#habit-filter');
-  const value = select?.value;
-  if (value === 'active' || value === 'archived') return value;
-  return 'all';
-}
-
-// Minimal view behavior: rows filtered by the selected value. The full
-// filtering/views epic is XDc5Tpp; this exists so the Archived view can host
-// the restore flow (TOR-02-E0o3IbX).
-function visibleHabits(state: AppState, filter: FilterValue) {
-  switch (filter) {
-    case 'active':
-      return state.habits.filter((habit) => !habit.archived);
-    case 'archived':
-      return state.habits.filter((habit) => habit.archived);
-    case 'all':
-      return state.habits;
-  }
-}
 
 function renderFooter(root: HTMLElement): void {
   root.textContent = `${APP_NAME} v${APP_VERSION}`;
@@ -85,31 +34,28 @@ export function renderApp(): void {
   // non-null.
   const errorEl: HTMLElement = errorRoot;
   const listEl: HTMLElement = listRoot;
+  const filterEl: HTMLElement = filterRoot;
 
   // In-memory mirror of the stored document; updated on every successful
   // mutation and re-rendered from.
   let state: AppState = emptyState();
 
+  // TOR-05-PrNhHoE: the Active view is the selected filter by default, fresh
+  // or with existing data — the daily list stays uncluttered on open.
+  let filter: FilterValue = 'active';
+
   function render(): void {
-    const filter = currentFilter();
-    const habits = visibleHabits(state, filter);
-    listEl.replaceChildren();
-    if (habits.length === 0) {
-      const empty = document.createElement('p');
-      empty.className = 'empty-state';
-      empty.textContent = EMPTY_MESSAGES[filter];
-      listEl.append(empty);
-      return;
-    }
-    for (const habit of habits) {
-      listEl.append(
-        renderHabitRow(habit, {
-          onToggle: (id) => runAction(toggleToday(id)),
-          onArchive: (id) => runAction(archiveHabit(id)),
-          onRestore: (id) => runAction(restoreHabit(id)),
-        }),
-      );
-    }
+    renderFilterBar(filterEl, filter, {
+      onChange: (value) => {
+        filter = value;
+        render();
+      },
+    });
+    renderHabitList(listEl, state, filter, {
+      onToggle: (id) => runAction(toggleToday(id)),
+      onArchive: (id) => runAction(archiveHabit(id)),
+      onRestore: (id) => runAction(restoreHabit(id)),
+    });
   }
 
   function runAction(result: HabitActionResult): void {
@@ -147,8 +93,6 @@ export function renderApp(): void {
     state = emptyState();
     render();
   }
-
-  renderFilterControl(filterRoot, render);
 
   const loaded = loadState();
   if (loaded.status === 'unreadable') {
