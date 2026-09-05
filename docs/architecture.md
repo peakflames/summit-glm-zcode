@@ -3,9 +3,10 @@
 > Refreshed to the as-built state by `/peak-workflow:refresh-docs` after Epics tVQOvBV
 > (Project Scaffold & App Shell), C1R8qkJ (Persistence Store & Recovery), AQNWtiB
 > (Habit Management UI), m1i25n4 (Daily Check-in & Streaks — all completed 2026-09-04),
-> XDc5Tpp (Filtering, Views & Offline Verification — completed 2026-09-05), and NZK8kqE
-> (PeakFlames Design System — completed 2026-09-04). Re-run that command after further
-> epics to keep this document aligned with the code.
+> XDc5Tpp (Filtering, Views & Offline Verification — completed 2026-09-05), NZK8kqE
+> (PeakFlames Design System — completed 2026-09-04), and lfstJmm (Row UI Parity —
+> completed 2026-09-05). Re-run that command after further epics to keep this document
+> aligned with the code.
 
 ---
 
@@ -70,8 +71,9 @@ src/
 │   ├── error-banner.ts  Recovery banner + inline errors (role="alert")
 │   ├── habit-form.ts    Add-habit form: submit paths + inline validation errors
 │   ├── filter-bar.ts    Three-segment All/Active/Archived radiogroup (filter control)
-│   ├── habit-list.ts    Per-view row filtering + per-filter empty states
-│   └── habit-row.ts     Habit row rendering (checkbox, name, archived tag, badge, action)
+│   ├── habit-list.ts    Per-view row filtering, Active help hint, per-filter empty states
+│   └── habit-row.ts     Habit row rendering (done-toggle button, name, archived tag,
+│                        streak badge with DAY STREAK caption, action)
 └── lib/
     ├── version.ts       APP_NAME / APP_VERSION (build-time define)
     ├── logger.ts        [LEVEL] message logger (DEBUG/INFO/WARN/ERROR)
@@ -81,8 +83,9 @@ src/
     └── storage.ts       Full store: loadState / saveState / updateState
 ```
 
-Co-located `*.test.ts` files (12 files, 102 tests — including the Epic NZK8kqE
-`src/ui/design-system.test.ts` design-system contract tests) mirror the TOR Gherkin from
+Co-located `*.test.ts` files (12 files, 110 tests — including the Epic NZK8kqE
+`src/ui/design-system.test.ts` design-system contract tests and the Epic lfstJmm
+Active-view help-hint / DAY-STREAK-caption tests) mirror the TOR Gherkin from
 `docs/requirements/`.
 
 ---
@@ -115,7 +118,9 @@ markup once at boot:
 - Loads state via `loadState()`. On a valid load it renders the list area via
   `renderHabitList()`: a per-filter empty state (see the message table in the Filter bar
   and views section) when nothing matches the current filter, otherwise one habit row
-  per visible habit via `renderHabitRow()`. On an unreadable load it renders the
+  per visible habit via `renderHabitRow()` — with a one-line help hint preceding the
+  rows or empty state on the Active view only (see the Filter bar and views section).
+  On an unreadable load it renders the
   recovery banner into `#error-region` instead — unreadable data is never silently
   treated as an empty state.
 - Wires the add-habit form via `initHabitForm()` (see below) and renders the version
@@ -151,12 +156,15 @@ Adoption rules baked into the code:
   contract.
 - **One hot element per view (TOR-07-EXjNoVz).** The Add button is the sole
   `pf-btn--primary` (flame-accent) control; every other control is secondary, ghost, or
-  a plain checkbox.
+  the done toggle — whose done state is success green, never flame
+  (TOR-07-OgGR571, Epic lfstJmm).
 - **Filter selection (TOR-07-o4sphQD).** The ember gradient treatment is the
   `pf-tab--active::after` bar; `filter-bar.ts` toggles `pf-tab--active` together with
   the original `is-selected`, whose own CSS keeps only a neutral emphasis.
-- **Streak prominence (TOR-07-pa7ak24).** `.streak-badge` is amber
-  (`--text-accent`), display-face, and heavier/larger than `.habit-name`.
+- **Streak prominence (TOR-07-pa7ak24).** `.streak-badge` stacks the streak number
+  (`.streak-number` — amber `--text-accent`, display face, heavier/larger than
+  `.habit-name`, `tabular-nums`) over a mono "DAY STREAK" caption (`.streak-caption`,
+  Epic lfstJmm, TOR-04-rknaMfI).
 - **Focus rings (TOR-07-c3lKxoV).** The vendored `tokens/base.css` sets a global
   `:focus-visible` ring (`--ring-focus`) covering every interactive control.
 
@@ -183,24 +191,32 @@ list area:
 | only archived habits | Active | "No active habits." |
 | no archived habits | Archived | "No archived habits." |
 
+On the Active view only, `renderHabitList()` also prepends a one-line help hint
+(`p.habit-help-hint.pf-hint`) as the first element of the list region —
+"Mark done tomorrow to continue a streak — a missed day resets it to 1." (exact
+TOR-04-HiRBSAa wording, Epic lfstJmm). It is keyed on the `active` filter and is absent
+on Archived and All; the list region is cleared via `replaceChildren()` before each
+render, so the hint never duplicates or lingers across filter switches.
+
 Offline capability (TOR-01-0d73l6K) is architectural: the app makes no network calls at
 all — there is no `fetch`/`XMLHttpRequest`/WebSocket anywhere in `src/`, and all
 capability (add, check-in, archive, restore, filter) runs locally against
 `localStorage`, verified live with a flat `performance` resource timeline across a full
 action session.
 
-### Habit rows (Epic AQNWtiB, wired in Epic m1i25n4; archived tag in Epic XDc5Tpp)
+### Habit rows (Epic AQNWtiB, wired in Epic m1i25n4; archived tag in Epic XDc5Tpp; row UI parity in Epic lfstJmm)
 
-Each row (`.habit-row`, keyed by `data-habit-id`) carries a "Done today" checkbox
-(`aria-label` per habit), the habit name (`.habit-name`), an "Archived" tag
-(`.archived-tag`) when the habit is archived, a streak badge
-(`.streak-badge`, with a `Current streak: N` aria-label), and one action button —
-**Archive** for active habits, **Restore** for archived ones. The row is a pure function
-of the habit (`src/ui/habit-row.ts`): the checkbox reflects
-`habit.completions.includes(todayLocalDate())` and fires the row's `onToggle` callback on
-change; the badge renders `currentStreak(habit.completions)` from the streak engine —
-every render (initial, post-toggle, post-restore) is derived from the stored history with
-no special cases.
+Each row (`.habit-row`, keyed by `data-habit-id`) carries a "Done today" / "Done ✓"
+toggle button (`<button type="button" aria-pressed>`, `aria-label` per habit), the habit
+name (`.habit-name`), an "Archived" tag (`.archived-tag`) when the habit is archived, a
+streak badge (`.streak-badge`, with a `Current streak: N` aria-label), and one action
+button — **Archive** for active habits, **Restore** for archived ones. The row is a pure
+function of the habit (`src/ui/habit-row.ts`): the button's `aria-pressed` state and
+label reflect `habit.completions.includes(todayLocalDate())` and it fires the row's
+`onToggle` callback on click; the badge renders `currentStreak(habit.completions)` from
+the streak engine as a `.streak-number` with a mono "DAY STREAK" `.streak-caption`
+directly beneath it — every render (initial, post-toggle, post-restore) is derived from
+the stored history with no special cases.
 
 ### Streak engine and local dates (Epic m1i25n4)
 

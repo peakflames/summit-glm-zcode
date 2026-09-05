@@ -7,6 +7,27 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.4.0] — 05-Sep-2026
+
+### Added
+
+- Row UI parity (Epic lfstJmm): the daily check-in is a "Done today" / "Done ✓"
+  toggle button, every streak badge carries a "DAY STREAK" caption beneath the
+  number, and the Active view shows a help hint teaching the streak rule.
+
+### Changed
+
+- Habit rows match the reference implementation: semantic `<ul>`/`<li>` list
+  structure with the name first and controls right, quiet success-green done
+  treatment, `pf-btn--md` button sizing, and a 480px reflow that drops the
+  habit name to its own line on narrow screens (quick-fix
+  `row-ui-mobile-parity`).
+- App shell widened to 45rem to match the reference column width.
+
+### Fixed
+
+---
+
 ## [0.3.0] — 05-Sep-2026
 
 ### Added

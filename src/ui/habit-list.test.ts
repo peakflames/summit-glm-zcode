@@ -108,9 +108,84 @@ describe('renderHabitList', () => {
     expect(
       row.querySelector<HTMLButtonElement>('.habit-action')!.textContent,
     ).toBe('Restore');
-    expect(row.querySelector<HTMLElement>('.streak-badge')!.textContent).toMatch(
-      /^\d+$/,
+    expect(
+      row.querySelector<HTMLElement>('.streak-badge .streak-number')!.textContent,
+    ).toMatch(/^\d+$/);
+  });
+
+  // TOR-04-rknaMfI
+  // Given at least one habit exists in the current view,
+  // When the habit list renders,
+  // Then each row's streak badge shows the streak number with the caption
+  // text "DAY STREAK" directly beneath it, on active and archived rows alike.
+  it('renders a DAY STREAK caption beneath the number in every streak badge', () => {
+    renderHabitList(listEl, TWO_ACTIVE_ONE_ARCHIVED, 'all', callbacks);
+
+    const badges = [...document.querySelectorAll<HTMLElement>('.streak-badge')];
+    expect(badges).toHaveLength(3);
+    for (const badge of badges) {
+      expect(badge.querySelector<HTMLElement>('.streak-number')!.textContent).toMatch(
+        /^\d+$/,
+      );
+      expect(badge.querySelector<HTMLElement>('.streak-caption')!.textContent).toBe(
+        'DAY STREAK',
+      );
+    }
+  });
+
+  // TOR-04-HiRBSAa
+  // Given the Active view is displayed,
+  // When the user views the page,
+  // Then a help hint is visible above the habit list reading "Mark done
+  // tomorrow to continue a streak — a missed day resets it to 1."
+  it('shows the streak-rule help hint above the list on the Active view', () => {
+    renderHabitList(listEl, TWO_ACTIVE_ONE_ARCHIVED, 'active', callbacks);
+
+    const hint = listEl.querySelector<HTMLElement>('.habit-help-hint')!;
+    expect(hint).not.toBeNull();
+    expect(hint.textContent).toBe(
+      'Mark done tomorrow to continue a streak — a missed day resets it to 1.',
     );
+    // "Above the habit list": the hint is the first element in the region,
+    // before any habit row.
+    expect(listEl.firstElementChild).toBe(hint);
+    expect(document.querySelectorAll('.habit-row')).toHaveLength(2);
+  });
+
+  it('shows the help hint even when the Active view is empty', () => {
+    renderHabitList(listEl, NO_HABITS, 'active', callbacks);
+
+    expect(listEl.querySelector<HTMLElement>('.habit-help-hint')!.textContent).toBe(
+      'Mark done tomorrow to continue a streak — a missed day resets it to 1.',
+    );
+    expect(listEl.querySelector<HTMLElement>('.empty-state')).not.toBeNull();
+  });
+
+  // TOR-04-HiRBSAa
+  // Given the Archived view is displayed,
+  // When the user views the page,
+  // Then the help hint is removed.
+  it('does not show the help hint on the Archived view', () => {
+    renderHabitList(listEl, ONLY_ARCHIVED, 'archived', callbacks);
+
+    expect(listEl.querySelector('.habit-help-hint')).toBeNull();
+    expect(document.querySelectorAll('.habit-row')).toHaveLength(1);
+  });
+
+  it('does not show the help hint on the All view', () => {
+    renderHabitList(listEl, TWO_ACTIVE_ONE_ARCHIVED, 'all', callbacks);
+
+    expect(listEl.querySelector('.habit-help-hint')).toBeNull();
+  });
+
+  // Re-render hygiene: the list region is reused across renders, so a filter
+  // switch away from Active must remove a previously rendered hint.
+  it('removes the help hint when re-rendering the same region on Archived', () => {
+    renderHabitList(listEl, TWO_ACTIVE_ONE_ARCHIVED, 'active', callbacks);
+    renderHabitList(listEl, TWO_ACTIVE_ONE_ARCHIVED, 'archived', callbacks);
+
+    expect(listEl.querySelector('.habit-help-hint')).toBeNull();
+    expect(document.querySelectorAll('.habit-row')).toHaveLength(1);
   });
 
   it('Active view lists exactly the active habits with Archive actions', () => {
@@ -157,5 +232,29 @@ describe('renderHabitList', () => {
     expect(document.querySelectorAll('.habit-row')).toHaveLength(0);
     const empty = listEl.querySelector<HTMLElement>('.empty-state')!;
     expect(empty.textContent).toBe('No archived habits.');
+  });
+
+  // Quick-fix row-ui-mobile-parity: rows are semantic <li> elements inside a
+  // <ul.habit-rows>, matching the reference implementation's list structure;
+  // the help hint and empty state stay outside the list (a <ul> may not
+  // contain <p> children).
+  it('renders rows as li elements inside ul.habit-rows with the hint outside the list', () => {
+    renderHabitList(listEl, TWO_ACTIVE_ONE_ARCHIVED, 'active', callbacks);
+
+    const rowsList = listEl.querySelector('ul.habit-rows')!;
+    expect(rowsList).not.toBeNull();
+    const rows = rowsList.querySelectorAll('li.habit-row');
+    expect(rows).toHaveLength(2);
+    for (const row of rows) {
+      expect(row.tagName).toBe('LI');
+    }
+    // Hint and empty state (when present) are siblings of the list, not
+    // children of it.
+    expect(listEl.querySelector('.habit-help-hint')).not.toBeNull();
+    expect(rowsList.querySelector('.habit-help-hint')).toBeNull();
+
+    renderHabitList(listEl, NO_HABITS, 'active', callbacks);
+    expect(listEl.querySelector('ul.habit-rows')).toBeNull();
+    expect(listEl.querySelector('.empty-state')).not.toBeNull();
   });
 });

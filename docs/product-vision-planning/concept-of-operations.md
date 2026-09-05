@@ -1,7 +1,7 @@
 # Summit — Concept of Operations (ConOps)
 
-**Document Version:** 1.1
-**Date:** 2026-09-04
+**Document Version:** 1.2
+**Date:** 2026-09-05
 **Status:** Draft
 
 ---
@@ -43,16 +43,18 @@ a habit-builder uses today, each with its own friction:
 
 Summit is a single-page application that loads once and then never touches the network
 again. The entire product is one screen: an "Add habit" input at the top, a filter
-control (**All | Active | Archived**, defaulting to Active), a list of habit rows, and a
-footer showing the app version. Each row carries the habit's name, its current-streak
-badge, a "Done today" checkbox for the current local calendar day, and an Archive action
-(archived rows show Restore instead).
+control (**All | Active | Archived**, defaulting to Active), a one-line streak-rule hint
+above the list on the Active view, a list of habit rows, and a footer showing the app
+version. Each row carries the habit's name, its current-streak badge (the streak number
+with a "DAY STREAK" caption beneath it), a "Done today" toggle button for the current
+local calendar day, and an Archive action (archived rows show Restore instead).
 
-Checking "Done today" writes today's local date into the habit's completion history and
-recomputes the streak badge instantly; unchecking removes it. The current-streak rule is
+Clicking "Done today" writes today's local date into the habit's completion history,
+recomputes the streak instantly, and flips the button to "Done ✓" in success green;
+clicking it again removes today's completion. The current-streak rule is
 normative: consecutive completion days ending today if today is completed, otherwise
 ending yesterday; 0 if neither. A missed day therefore resets the streak honestly, and
-an unchecked day doesn't punish the user before the day is over.
+an undone day doesn't punish the user before the day is over.
 
 All state lives in the browser's `localStorage` under a single versioned key
 (`summit.habits.v1`). Every mutation serializes in-memory state and writes it back
@@ -70,7 +72,9 @@ copy, and behavior are untouched. The system's discipline rules apply: exactly o
 element per view carries the flame accent (the Add habit button, the one control
 guaranteed present regardless of habit count), the selected filter segment wears the
 ember gradient treatment, and every interactive control shows a visible keyboard focus
-ring.
+ring. The Done toggle is deliberately not flame-accented: unchecked it is a neutral
+outlined button reading "Done today"; checked it reads "Done ✓" in the design system's
+success green.
 
 ## 4. User Roles & Profiles
 
@@ -90,17 +94,17 @@ ring.
 1. User opens the Summit URL (dev: `http://localhost:5173`; prod: static host).
 2. App boots; the console prints `[INFO] Summit vX.Y.Z starting`; the page shows the
    "Summit" header, the "Add habit" input with an "Add" button, the filter control on
-   **Active**, an empty list with "No habits yet. Add your first habit above.", and the
-   footer "Summit vX.Y.Z".
+   **Active** with the streak-rule hint beneath it, an empty list with "No habits yet.
+   Add your first habit above.", and the footer "Summit vX.Y.Z".
 3. User types `Read 20 minutes` into the "Add habit" input.
 4. User clicks "Add" (or presses Enter in the input).
-5. The list shows one row: name `Read 20 minutes`, streak badge `0`, unchecked
-   "Done today" checkbox, "Archive" action.
-6. User clicks the row's "Done today" checkbox.
-7. The streak badge updates `0 → 1` immediately; the checkbox is checked; today's date
-   is in the habit's completions.
+5. The list shows one row: name `Read 20 minutes`, streak badge `0` over its
+   "DAY STREAK" caption, unchecked "Done today" button, "Archive" action.
+6. User clicks the row's "Done today" button.
+7. The streak number updates `0 → 1` immediately; the button now reads "Done ✓" in
+   success green; today's date is in the habit's completions.
 8. User reloads the page.
-9. The row persists exactly: same name, streak `1`, today checked.
+9. The row persists exactly: same name, streak `1`, today done ("Done ✓").
 
 **Outcome:** A first habit is tracked, its first streak is live, and the data survived a
 reload — the user has proof the app "sticks".
@@ -113,7 +117,7 @@ reload — the user has proof the app "sticks".
 **Steps:**
 1. User opens Summit (offline is fine — the app needs no network after first load).
 2. The Active list shows `Read 20 minutes` with streak badge `1`; today's "Done today"
-   checkbox is unchecked (yesterday's completion is history, not today's state).
+   button is unchecked (yesterday's completion is history, not today's state).
 3. User clicks "Done today".
 4. The streak badge updates `1 → 2` immediately.
 5. The footer confirms the running version ("Summit vX.Y.Z").
@@ -220,9 +224,11 @@ CDN), the app renders with system-font fallbacks and remains fully functional.
  User ──input──▶│  UI (single page, no routing)       │
                 │   ├─ Add habit input + Add button   │
                 │   ├─ Filter: All | Active | Archived│
-                │   ├─ Habit rows: name, streak badge,│
-                │   │  "Done today" toggle, Archive / │
-                │   │  Restore                        │
+                │   ├─ Streak-rule hint (Active view) │
+                │   ├─ Habit rows: name, streak number│
+                │   │  + "DAY STREAK" caption,        │
+                │   │  "Done today"/"Done ✓" toggle,  │
+                │   │  Archive / Restore              │
                 │   └─ Footer: "Summit vX.Y.Z"        │
                 │        │ every mutation             │
                 │        ▼                            │
@@ -246,9 +252,10 @@ CDN), the app renders with system-font fallbacks and remains fully functional.
 |---|---|---|
 | Habit management | Add habit | Name-only; non-empty after trim, ≤ 80 chars; duplicates allowed |
 | Habit management | Archive / Restore | Hides from Active; completions preserved; restorable |
-| Daily check-in | "Done today" toggle | Idempotent per local date; unchecking removes today's completion and recomputes the streak |
-| Streaks | Current-streak badge | Consecutive days ending today-or-yesterday; `0` if neither (normative rule, PV §6) |
+| Daily check-in | "Done today" toggle button | Reads "Done ✓" (success green) when done; idempotent per local date; un-toggling removes today's completion and recomputes the streak |
+| Streaks | Current-streak badge | Streak number over a "DAY STREAK" caption; consecutive days ending today-or-yesterday; `0` if neither (normative rule, PV §6) |
 | List & filter | All / Active / Archived | Default Active; archived rows tagged in All; per-filter empty states |
+| List & filter | Streak-rule help hint | One line above the list on the Active view; teaches the honest-reset rule |
 | Cross-cutting | Persistence | Single versioned `localStorage` key; write on every mutation |
 | Cross-cutting | Version display | Footer `Summit vX.Y.Z` + startup console line, both from `package.json#version` |
 | Cross-cutting | Error standard | Inline messages name the problem and next action; unreadable saved data → "Start fresh" banner |
@@ -276,11 +283,13 @@ CDN), the app renders with system-font fallbacks and remains fully functional.
 | Active habit | A habit with `archived: false`; appears in the default Active view |
 | Archived habit | A habit retired from the daily list; history retained; restorable |
 | Completion | One local calendar day on which a habit was marked done |
+| Done toggle | The habit row's check-in button — reads "Done today" when today is not yet completed, "Done ✓" (success green) when it is |
 | Current streak | Count of consecutive completion days ending today (if today is completed) or yesterday; `0` if neither |
 | Local date | Calendar date in the user's timezone, stored as `YYYY-MM-DD` |
 | `summit.habits.v1` | The single `localStorage` key holding all app data |
 | Schema version | Integer field inside the stored JSON enabling future migrations |
 | Empty state | Friendly message shown when the current filter has no rows |
+| Help hint | The one-line streak-rule hint above the list on the Active view ("Mark done tomorrow to continue a streak — a missed day resets it to 1.") |
 | PeakFlames Design System | The shared design language for PeakFlames products: dark obsidian canvas, flame/ember/amber accent ramp, Archivo / IBM Plex Sans / JetBrains Mono type ramp, `.pf-*` component classes |
 | Token CSS | The design system's CSS custom-property files, vendored byte-identical into the repo and imported as the base stylesheet layer |
 | Flame accent | The design system's bright primary accent (`--flame`); reserved for exactly one "hot" element per view |

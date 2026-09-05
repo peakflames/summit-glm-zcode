@@ -9,6 +9,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { renderFilterBar, type FilterValue } from './filter-bar';
 import { renderHabitRow, type HabitRowCallbacks } from './habit-row';
+import { todayLocalDate } from '../lib/streaks';
 import type { Habit } from '../lib/storage';
 
 function fixture(): void {
@@ -115,5 +116,70 @@ describe('design system adoption', () => {
     ]) {
       expect(readFileSync(source, 'utf-8')).not.toContain('pf-btn--primary');
     }
+  });
+
+  // TOR-07-OgGR571 (Epic lfstJmm)
+  // Given a habit row in the Active view whose check-in control is a toggle
+  // button, considered first in its undone state and then in its done state
+  // after today is completed,
+  // When the user views the button in each state,
+  // Then the undone state reads "Done today" with a neutral outlined
+  // treatment (pf-btn--secondary) and the done state reads "Done ✓" with the
+  // design system's success-green treatment, and neither state carries the
+  // flame accent, which remains reserved for the Add button.
+  describe('check-in toggle button treatment', () => {
+    // happy-dom cannot resolve the vendored token CSS, so the color-level
+    // contract is pinned at the source level (same pattern as the test above).
+    const styles = readFileSync('src/styles.css', 'utf-8');
+
+    it('carries the neutral outlined treatment when undone and success green when done', () => {
+      const undone = renderHabitRow(habitFixture(), noopCallbacks);
+      const done = renderHabitRow(
+        habitFixture({ completions: [todayLocalDate()] }),
+        noopCallbacks,
+      );
+
+      const undoneBtn = undone.querySelector<HTMLButtonElement>('.habit-done-btn')!;
+      expect(undoneBtn.textContent).toBe('Done today');
+      expect(undoneBtn.getAttribute('aria-pressed')).toBe('false');
+      expect(undoneBtn.classList.contains('pf-btn')).toBe(true);
+      expect(undoneBtn.classList.contains('pf-btn--secondary')).toBe(true);
+      expect(undoneBtn.classList.contains('pf-btn--primary')).toBe(false);
+
+      const doneBtn = done.querySelector<HTMLButtonElement>('.habit-done-btn')!;
+      expect(doneBtn.textContent).toBe('Done ✓');
+      expect(doneBtn.getAttribute('aria-pressed')).toBe('true');
+      expect(doneBtn.classList.contains('pf-btn--primary')).toBe(false);
+    });
+
+    it('styles the done state as quiet success green and never the flame accent', () => {
+      const doneRule = /\.habit-done-btn\[aria-pressed='true'\][^{]*\{[^}]*\}/.exec(
+        styles,
+      )?.[0];
+      expect(doneRule).not.toBeNull();
+      // Quick-fix row-ui-mobile-parity: the done state matches the reference
+      // implementation's quiet treatment — success-bg fill with success text
+      // and border — rather than a solid bright-green fill.
+      expect(doneRule).toContain('--status-success-bg');
+      expect(doneRule).toContain('--status-success');
+      expect(doneRule).not.toContain('--accent');
+      // The Add button stays the sole flame-accented control.
+      expect(styles).not.toContain('pf-btn--primary');
+    });
+
+    it('sizes the toggle as a deliberate stable-width control', () => {
+      // pf-btn--md on both row buttons; the done rule reserves its width so
+      // the label swap doesn't shift the row (matches the reference site).
+      const undone = renderHabitRow(habitFixture(), noopCallbacks);
+      const doneBtn = undone.querySelector<HTMLButtonElement>('.habit-done-btn')!;
+      expect(doneBtn.classList.contains('pf-btn--md')).toBe(true);
+      expect(
+        undone.querySelector<HTMLButtonElement>('.habit-action')!.classList.contains(
+          'pf-btn--md',
+        ),
+      ).toBe(true);
+      const doneRule = /\.habit-done-btn\s*\{[^}]*\}/.exec(styles)?.[0];
+      expect(doneRule).toContain('min-width');
+    });
   });
 });

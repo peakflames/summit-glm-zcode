@@ -11,7 +11,10 @@ body {
 }
 
 .shell {
-  max-width: 32rem;
+  /* 45rem matches the reference implementation's app-shell width (720px);
+     the row's name + badge + two pf-btn--md controls need it to stay on one
+     line at desktop (quick-fix row-ui-mobile-parity). */
+  max-width: 45rem;
   margin: 0 auto;
   padding: var(--space-6) var(--space-4);
   display: flex;
@@ -117,64 +120,116 @@ body {
 }
 
 /* pf-card provides the surface; the row overrides padding for a compact list
-   row and drops the old divider borders in favor of card borders. */
+   row and drops the old divider borders in favor of card borders. flex-wrap
+   plus the 480px reflow below (quick-fix row-ui-mobile-parity) lets the name
+   drop to its own full-width line on narrow screens instead of being crushed
+   between the two buttons. */
 .habit-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
 }
 
+/* Semantic row list (quick-fix row-ui-mobile-parity): the <ul> that holds the
+   <li.habit-row> elements; the hint and empty state live outside it. */
+.habit-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
 .habit-name {
-  flex: 1;
+  flex: 1 1 auto;
   overflow-wrap: anywhere;
   color: var(--text-heading);
   font-weight: var(--weight-medium);
 }
 
 /* The streak is the visual hero of the row (TOR-07-pa7ak24): amber, display
-   face, heavier and larger than the habit name on the same row. */
+   face, heavier and larger than the habit name on the same row. Epic lfstJmm
+   stacks the "DAY STREAK" caption beneath the number (TOR-04-rknaMfI). */
 .streak-badge {
-  min-width: 1.75rem;
+  min-width: 3.5rem;
   padding: 0 var(--space-1);
   border-radius: var(--radius-sm);
-  font-family: var(--font-display);
-  font-size: var(--text-h3);
-  font-weight: var(--weight-bold);
-  color: var(--text-accent);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
+  line-height: 1.1;
+}
+
+.streak-number {
+  font-family: var(--font-display);
+  font-size: var(--text-h2);
+  font-weight: var(--weight-black);
+  color: var(--text-accent);
   font-variant-numeric: tabular-nums;
 }
 
-/* The done checkbox keeps checkbox semantics (no DOM change) but gets the
-   pf-check input treatment. It must not read as the primary flame button —
-   the Add button is the one hot element (TOR-07-EXjNoVz). */
-.habit-done {
-  appearance: none;
+/* Mono caption ramp per the design system (cf. .pf-label in the vendored
+   token layer). */
+.streak-caption {
+  font-family: var(--font-mono);
+  font-size: var(--text-micro);
+  letter-spacing: var(--tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* TOR-04-HiRBSAa (Epic lfstJmm): one-line streak-rule hint above the Active
+   list; .pf-hint supplies size and color, this supplies the layout role. */
+.habit-help-hint {
+  margin: 0 0 var(--space-2);
+}
+
+/* TOR-07-OgGR571 (Epic lfstJmm): the check-in toggle button. The undone
+   state's neutral outlined treatment comes from pf-btn--secondary; the done
+   state is quiet success green — success-bg fill with success text and border,
+   never the flame accent; the Add button is the one hot element
+   (TOR-07-EXjNoVz). The min-width keeps the toggle a stable, deliberate
+   control across both labels (quick-fix row-ui-mobile-parity). */
+.habit-done-btn {
   flex: 0 0 auto;
-  width: 18px;
-  height: 18px;
-  margin: 0;
-  background: var(--surface-inset);
-  border: var(--border-hairline) solid var(--border-strong);
-  border-radius: var(--radius-xs);
-  cursor: pointer;
-  transition: var(--transition-control);
+  min-width: 7.5rem;
 }
 
-.habit-done:hover {
-  border-color: var(--text-muted);
-}
-
-/* Success green, not flame — the done control must not carry the flame
-   accent; the Add button is the one hot element (TOR-07-EXjNoVz). */
-.habit-done:checked {
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23FBF8C2' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='M3.5 8.5l3 3 6-7'/></svg>");
-  background-size: 14px;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-color: var(--status-success);
+.habit-done-btn[aria-pressed='true'] {
+  background: var(--status-success-bg);
   border-color: var(--status-success);
+  color: var(--status-success);
+}
+
+/* Quick-fix row-ui-mobile-parity: narrow-screen reflow — the name takes its
+   own full-width line and the badge + buttons share the second line. */
+@media (max-width: 480px) {
+  .habit-row {
+    gap: var(--space-2);
+    justify-content: space-between;
+  }
+
+  .habit-name {
+    flex-basis: 100%;
+  }
+
+  .streak-badge {
+    min-width: 3rem;
+  }
+
+  .habit-done-btn {
+    min-width: 6.5rem;
+  }
+
+  .habit-done-btn,
+  .habit-action {
+    padding: 0 var(--space-3);
+  }
 }
 
 .shell-footer {
