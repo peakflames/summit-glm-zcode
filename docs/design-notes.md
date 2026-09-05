@@ -2,8 +2,9 @@
 
 > Refreshed by `/peak-workflow:refresh-docs` after Epics tVQOvBV (Project Scaffold & App
 > Shell), C1R8qkJ (Persistence Store & Recovery), AQNWtiB (Habit Management UI),
-> m1i25n4 (Daily Check-in & Streaks — all completed 2026-09-04), and XDc5Tpp
-> (Filtering, Views & Offline Verification — completed 2026-09-05). Sections 1–5 are the
+> m1i25n4 (Daily Check-in & Streaks — all completed 2026-09-04), XDc5Tpp
+> (Filtering, Views & Offline Verification — completed 2026-09-05), and NZK8kqE
+> (PeakFlames Design System — completed 2026-09-04). Sections 1–5 are the
 > original planning decisions from `/peak-workflow:setup` (verified still accurate);
 > section 6+ are as-built decisions consolidated from the epics' session handoffs.
 
@@ -131,7 +132,9 @@ would be pure overhead.
 
 **Decision:** The vitest suites (28 tests across 6 files at Epic tVQOvBV's close; 49
 tests across 8 files after Epic AQNWtiB; 77 tests across 9 files after Epic m1i25n4;
-99 tests across 11 files after Epic XDc5Tpp,
+99 tests across 11 files after Epic XDc5Tpp; 102 tests across 12 files after Epic
+NZK8kqE, which added `src/ui/design-system.test.ts` — 3 design-system contract tests —
+with all 99 pre-existing tests passing unmodified,
 co-located with the code under `src/`) are
 written to exercise each TOR's Given/When/Then from
 `docs/requirements/*.feature.md`, and the handoff's TOR Coverage table maps every TOR ID to
@@ -399,15 +402,25 @@ the epic's primary regression signal.
 **Rationale:** Byte-identical vendoring keeps the token layer upgradeable by re-copying
 from the design source, and the additive-class constraint means the visual change can
 never regress behavior the tests pin: tests select by the original class names, so any
-accidental DOM change fails a test rather than silently shipping. Two spec-vs-repo
+accidental DOM change fails a test rather than silently shipping. Three spec-vs-repo
 frictions were reconciled at implementation time: (1) the spec's literal
 `@import './peakflames/styles.css'` line doesn't resolve from `src/styles.css` (the
 vendored location is `src/styles/peakflames/`) — the import is
-`./styles/peakflames/styles.css`; and (2) this repo builds with Vite 8/rolldown, which
+`./styles/peakflames/styles.css`; (2) this repo builds with Vite 8/rolldown, which
 resolves CSS `@import` differently from the sibling's Vite 5, so the import uses the
-`url(...)` form. The one-hot-element rule (Add button is the sole `pf-btn--primary`),
-the ember-gradient filter selection (`pf-tab--active` toggled with `is-selected`), and
-the amber `.streak-badge` prominence treatment are recorded in architecture.md §6.
+`url(...)` form; and (3) the spec's `pf-label` on `.streak-badge` was rejected —
+`pf-label` is mono/micro/muted and would defeat TOR-07-pa7ak24 prominence, so
+`.streak-badge` keeps only its own class and takes the amber treatment directly
+(display face, `--text-h3`, bold, `--text-accent`). Likewise, the done control is a
+checkbox in this repo, so it keeps `.habit-done` semantics (no DOM change) with a
+pf-check-style CSS treatment whose checked state is success green (`--status-success`),
+not flame — honoring the spec's "done must NOT carry the flame accent" note. The
+one-hot-element rule (Add button is the sole `pf-btn--primary`), the ember-gradient
+filter selection (`pf-tab--active` toggled with `is-selected`), and the amber
+`.streak-badge` prominence treatment are recorded in architecture.md §6. Webfonts ride
+the vendored `tokens/fonts.css` Google Fonts `@import` plus `preconnect` links in
+`index.html`, with system-font fallback stacks in the `--font-*` variables
+(TOR-07-ywpamQm pins the degradation path live with the CDN blocked).
 
 ---
 
@@ -416,7 +429,12 @@ the amber `.streak-badge` prominence treatment are recorded in architecture.md �
 - **Favicon 404 (non-blocking):** browsers auto-request `/favicon.ico` and the Vite dev
   server returns a 404, producing one console error per page load. No TOR requires an
   icon; candidate for `/peak-workflow:quick-fix`. (Epic tVQOvBV wrapup; carried through
-  C1R8qkJ, AQNWtiB, and m1i25n4.)
+  C1R8qkJ, AQNWtiB, m1i25n4, XDc5Tpp, and NZK8kqE.)
+- **Brand webfonts load from Google Fonts CDN:** the vendored `tokens/fonts.css`
+  fetches the brand webfonts from Google Fonts on first load (per ConOps §6 and the
+  epic spec); TOR-07-ywpamQm pins the system-fallback degradation path. If licensed
+  font files ever become available, swap the `@import` for local `@font-face` rules per
+  the file's own substitution note. (Epic NZK8kqE handoff.)
 - **`saveState` maps any `setItem` failure to `quota-exceeded`:** a blocked-storage
   `SecurityError` (localStorage disabled) would be mislabeled as "storage is full" in the
   inline message. Cosmetic message-accuracy nit for a future quick-fix. (Epic C1R8qkJ

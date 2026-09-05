@@ -3,8 +3,9 @@
 > Refreshed to the as-built state by `/peak-workflow:refresh-docs` after Epics tVQOvBV
 > (Project Scaffold & App Shell), C1R8qkJ (Persistence Store & Recovery), AQNWtiB
 > (Habit Management UI), m1i25n4 (Daily Check-in & Streaks — all completed 2026-09-04),
-> and XDc5Tpp (Filtering, Views & Offline Verification — completed 2026-09-05). Re-run
-> that command after further epics to keep this document aligned with the code.
+> XDc5Tpp (Filtering, Views & Offline Verification — completed 2026-09-05), and NZK8kqE
+> (PeakFlames Design System — completed 2026-09-04). Re-run that command after further
+> epics to keep this document aligned with the code.
 
 ---
 
@@ -61,7 +62,9 @@ N/A — no backend. Application code is organized as ES modules under `src/`:
 src/
 ├── main.ts              Boot sequence (entry point)
 ├── app.ts               Shell render + wiring (filter, list, boot load / recovery)
-├── styles.css           Shell, habit list/form, and banner styling
+├── styles.css           Summit layout on top of the vendored token layer
+├── styles/peakflames/   Vendored PeakFlames Design System (styles.css + tokens/ —
+│                        11 byte-identical token CSS files; see §6 "Styling")
 ├── vite-env.d.ts        Ambient declaration for __APP_VERSION__
 ├── ui/
 │   ├── error-banner.ts  Recovery banner + inline errors (role="alert")
@@ -78,7 +81,8 @@ src/
     └── storage.ts       Full store: loadState / saveState / updateState
 ```
 
-Co-located `*.test.ts` files (11 files, 99 tests) mirror the TOR Gherkin from
+Co-located `*.test.ts` files (12 files, 102 tests — including the Epic NZK8kqE
+`src/ui/design-system.test.ts` design-system contract tests) mirror the TOR Gherkin from
 `docs/requirements/`.
 
 ---
