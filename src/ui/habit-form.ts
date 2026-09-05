@@ -39,7 +39,7 @@ export function initHabitForm(callbacks: HabitFormCallbacks): void {
   function showError(message: string): void {
     if (!errorEl) {
       errorEl = document.createElement('p');
-      errorEl.className = 'form-error';
+      errorEl.className = 'form-error pf-error';
       errorEl.setAttribute('role', 'alert');
       form.append(errorEl);
     }

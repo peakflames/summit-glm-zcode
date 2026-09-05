@@ -383,7 +383,35 @@ mirroring the TOR-03-albP5kN precedent (decision 24).
 
 ---
 
-## 28. Known Issues and Deferred Work
+## 28. PeakFlames Design System adoption: vendored token CSS + strictly additive `.pf-*` classes (Epic NZK8kqE)
+
+**Decision:** Summit's visual direction is the PeakFlames Design System (product vision
+§9, v1.1; TOR baseline `07-visual-design.feature.md`). The 11 token CSS files are
+vendored **byte-identical** into `src/styles/peakflames/` (source: the sibling `summit`
+repo's verified copy of the design project — no DesignSync access in this environment);
+`src/styles.css` imports that layer first and keeps only Summit-specific layout. The
+restyle is **strictly additive and visual**: every original class name stays on its
+element and `.pf-*` classes are added alongside (e.g. `habit-row pf-card`,
+`filter-segment pf-tab`, `habit-action pf-btn pf-btn--secondary`), so no DOM element,
+attribute, or copy changes and the entire pre-existing test suite passes unmodified —
+the epic's primary regression signal.
+
+**Rationale:** Byte-identical vendoring keeps the token layer upgradeable by re-copying
+from the design source, and the additive-class constraint means the visual change can
+never regress behavior the tests pin: tests select by the original class names, so any
+accidental DOM change fails a test rather than silently shipping. Two spec-vs-repo
+frictions were reconciled at implementation time: (1) the spec's literal
+`@import './peakflames/styles.css'` line doesn't resolve from `src/styles.css` (the
+vendored location is `src/styles/peakflames/`) — the import is
+`./styles/peakflames/styles.css`; and (2) this repo builds with Vite 8/rolldown, which
+resolves CSS `@import` differently from the sibling's Vite 5, so the import uses the
+`url(...)` form. The one-hot-element rule (Add button is the sole `pf-btn--primary`),
+the ember-gradient filter selection (`pf-tab--active` toggled with `is-selected`), and
+the amber `.streak-badge` prominence treatment are recorded in architecture.md §6.
+
+---
+
+## 29. Known Issues and Deferred Work
 
 - **Favicon 404 (non-blocking):** browsers auto-request `/favicon.ico` and the Vite dev
   server returns a 404, producing one console error per page load. No TOR requires an

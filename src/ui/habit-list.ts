@@ -44,7 +44,7 @@ export function renderHabitList(
   const habits = visibleHabits(state, filter);
   if (habits.length === 0) {
     const empty = document.createElement('p');
-    empty.className = 'empty-state';
+    empty.className = 'empty-state pf-hint';
     empty.textContent = emptyStateMessage(state, filter);
     listEl.replaceChildren(empty);
     return;

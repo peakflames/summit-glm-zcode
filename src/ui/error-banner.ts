@@ -22,7 +22,9 @@ export function showRecoveryBanner(
   options: { reason: UnreadableReason; onReset: () => void },
 ): void {
   const banner = document.createElement('div');
-  banner.className = 'error-banner error-banner--recovery';
+  // pf-alert / pf-alert--danger (Epic NZK8kqE) supply the PeakFlames surface;
+  // the original class names stay for the tests and selectors.
+  banner.className = 'error-banner error-banner--recovery pf-alert pf-alert--danger';
   banner.setAttribute('role', 'alert');
 
   const message = document.createElement('p');
@@ -31,7 +33,7 @@ export function showRecoveryBanner(
   banner.append(message);
 
   const resetButton = document.createElement('button');
-  resetButton.className = 'error-banner-action';
+  resetButton.className = 'error-banner-action pf-btn pf-btn--secondary pf-btn--sm';
   resetButton.type = 'button';
   resetButton.textContent = 'Start fresh';
   resetButton.addEventListener('click', options.onReset);
@@ -44,7 +46,7 @@ export function showRecoveryBanner(
 // reset (e.g. a save refused because storage is full).
 export function showInlineError(root: HTMLElement, message: string): void {
   const banner = document.createElement('div');
-  banner.className = 'error-banner error-banner--inline';
+  banner.className = 'error-banner error-banner--inline pf-alert pf-alert--danger';
   banner.setAttribute('role', 'alert');
 
   const text = document.createElement('p');

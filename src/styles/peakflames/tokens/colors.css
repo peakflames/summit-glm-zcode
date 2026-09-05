@@ -1,0 +1,24 @@
+/* PeakFlames color primitives — sampled directly from the brand mark (assets/logo.svg). */
+:root{
+  /* Obsidian — the darkness the mark burns out of. Backgrounds, always. */
+  --obsidian-1000:#06111B; --obsidian-950:#0B1018; --obsidian-900:#101A24;
+  --obsidian-800:#17232F; --obsidian-700:#22313E; --obsidian-600:#33454F;
+
+  /* Ember — deep forge red. Pressed states, deep gradients, danger. */
+  --ember-900:#2D0C0A; --ember-800:#7A0A05; --ember-700:#AC0A07;
+  --ember-600:#BF0C04; --ember-500:#C4260D;
+
+  /* Flame — the primary brand accent. */
+  --flame-600:#D2310D; --flame-500:#E1400D; --flame-400:#D64B16; --flame-300:#EF6B2A;
+
+  /* Amber — secondary heat, highlights, warning. */
+  --amber-500:#F9C773; --amber-400:#FBE297; --amber-300:#E4CD91;
+
+  /* Ash — the pale smoke/cream of the flame tips. Text and surfaces on dark. */
+  --ash-50:#FBF8C2; --ash-100:#F6F3E7; --ash-200:#EBEDD4; --ash-300:#EFE2AA;
+  --ash-400:#C3C7BE; --ash-500:#8E958F; --ash-600:#5E6668;
+
+  /* Semantic hues outside the brand ramp — kept muted so heat stays the loudest signal. */
+  --forge-green-500:#4E9A6B; --forge-green-900:#12291D;
+  --steel-500:#4F86B8; --steel-900:#122333;
+}
