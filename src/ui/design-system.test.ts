@@ -152,15 +152,34 @@ describe('design system adoption', () => {
       expect(doneBtn.classList.contains('pf-btn--primary')).toBe(false);
     });
 
-    it('styles the done state with --status-success and never the flame accent', () => {
+    it('styles the done state as quiet success green and never the flame accent', () => {
       const doneRule = /\.habit-done-btn\[aria-pressed='true'\][^{]*\{[^}]*\}/.exec(
         styles,
       )?.[0];
       expect(doneRule).not.toBeNull();
+      // Quick-fix row-ui-mobile-parity: the done state matches the reference
+      // implementation's quiet treatment — success-bg fill with success text
+      // and border — rather than a solid bright-green fill.
+      expect(doneRule).toContain('--status-success-bg');
       expect(doneRule).toContain('--status-success');
       expect(doneRule).not.toContain('--accent');
       // The Add button stays the sole flame-accented control.
       expect(styles).not.toContain('pf-btn--primary');
+    });
+
+    it('sizes the toggle as a deliberate stable-width control', () => {
+      // pf-btn--md on both row buttons; the done rule reserves its width so
+      // the label swap doesn't shift the row (matches the reference site).
+      const undone = renderHabitRow(habitFixture(), noopCallbacks);
+      const doneBtn = undone.querySelector<HTMLButtonElement>('.habit-done-btn')!;
+      expect(doneBtn.classList.contains('pf-btn--md')).toBe(true);
+      expect(
+        undone.querySelector<HTMLButtonElement>('.habit-action')!.classList.contains(
+          'pf-btn--md',
+        ),
+      ).toBe(true);
+      const doneRule = /\.habit-done-btn\s*\{[^}]*\}/.exec(styles)?.[0];
+      expect(doneRule).toContain('min-width');
     });
   });
 });
