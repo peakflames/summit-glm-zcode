@@ -3,8 +3,9 @@
 > Refreshed by `/peak-workflow:refresh-docs` after Epics tVQOvBV (Project Scaffold & App
 > Shell), C1R8qkJ (Persistence Store & Recovery), AQNWtiB (Habit Management UI),
 > m1i25n4 (Daily Check-in & Streaks — all completed 2026-09-04), XDc5Tpp
-> (Filtering, Views & Offline Verification — completed 2026-09-05), and NZK8kqE
-> (PeakFlames Design System — completed 2026-09-04). Sections 1–5 are the
+> (Filtering, Views & Offline Verification — completed 2026-09-05), NZK8kqE
+> (PeakFlames Design System — completed 2026-09-04), and lfstJmm (Row UI Parity —
+> completed 2026-09-05). Sections 1–5 are the
 > original planning decisions from `/peak-workflow:setup` (verified still accurate);
 > section 6+ are as-built decisions consolidated from the epics' session handoffs.
 
@@ -134,7 +135,9 @@ would be pure overhead.
 tests across 8 files after Epic AQNWtiB; 77 tests across 9 files after Epic m1i25n4;
 99 tests across 11 files after Epic XDc5Tpp; 102 tests across 12 files after Epic
 NZK8kqE, which added `src/ui/design-system.test.ts` — 3 design-system contract tests —
-with all 99 pre-existing tests passing unmodified,
+with all 99 pre-existing tests passing unmodified; 110 tests across the same 12 files
+after Epic lfstJmm, which retargeted the checkbox selections to the toggle button and
+added the help-hint / DAY-STREAK-caption tests,
 co-located with the code under `src/`) are
 written to exercise each TOR's Given/When/Then from
 `docs/requirements/*.feature.md`, and the handoff's TOR Coverage table maps every TOR ID to
@@ -303,8 +306,9 @@ as every other habit action (decision 17).
 
 ## 23. The row is a pure function of the habit; badges update through the existing re-render path (Epic m1i25n4)
 
-**Decision:** `renderHabitRow` derives everything from the habit: the checkbox
-`checked` state is `completions.includes(today)` and the badge is
+**Decision:** `renderHabitRow` derives everything from the habit: the done control's
+state (`checked` on the m1i25n4 checkbox; `aria-pressed` on the lfstJmm toggle button,
+decision 29) is `completions.includes(today)` and the badge is
 `currentStreak(completions)`. `src/app.ts` wires
 `onToggle: (id) => runAction(toggleToday(id))` — the same in-memory-mirror re-render path
 as archive/restore — so a toggle updates the badge in place on the same `#habit-list`
@@ -411,10 +415,14 @@ resolves CSS `@import` differently from the sibling's Vite 5, so the import uses
 `url(...)` form; and (3) the spec's `pf-label` on `.streak-badge` was rejected —
 `pf-label` is mono/micro/muted and would defeat TOR-07-pa7ak24 prominence, so
 `.streak-badge` keeps only its own class and takes the amber treatment directly
-(display face, `--text-h3`, bold, `--text-accent`). Likewise, the done control is a
-checkbox in this repo, so it keeps `.habit-done` semantics (no DOM change) with a
-pf-check-style CSS treatment whose checked state is success green (`--status-success`),
-not flame — honoring the spec's "done must NOT carry the flame accent" note. The
+(display face, `--text-h3`, bold, `--text-accent`). Likewise, at NZK8kqE the done
+control was a checkbox in this repo, keeping `.habit-done` semantics (no DOM change)
+with a pf-check-style CSS treatment whose checked state was success green
+(`--status-success`), not flame — honoring the spec's "done must NOT carry the flame
+accent" note. *(Superseded in Epic lfstJmm: the done control is now an `aria-pressed`
+toggle button — decision 29 — carrying the same success-green done state over to
+`.habit-done-btn[aria-pressed='true']`, and `.streak-badge` gained the
+number + "DAY STREAK" caption structure of decision 30.)* The
 one-hot-element rule (Add button is the sole `pf-btn--primary`), the ember-gradient
 filter selection (`pf-tab--active` toggled with `is-selected`), and the amber
 `.streak-badge` prominence treatment are recorded in architecture.md §6. Webfonts ride
@@ -424,12 +432,71 @@ the vendored `tokens/fonts.css` Google Fonts `@import` plus `preconnect` links i
 
 ---
 
-## 29. Known Issues and Deferred Work
+## 29. The check-in control is an `aria-pressed` toggle button, not a checkbox (Epic lfstJmm)
+
+**Decision:** Each habit row's done control is a `<button type="button" aria-pressed>`
+labeled "Done today" (undone) / "Done ✓" (done) —
+`habit-done-btn pf-btn pf-btn--secondary` for the neutral outlined at-rest treatment
+(transparent background + `--border-strong`), with the done state as Summit CSS on
+`.habit-done-btn[aria-pressed='true']`: success green (`--status-success` background and
+border, obsidian text) — never `--accent` or `pf-btn--primary`
+(TOR-03-WUQGIE9, TOR-03-M5RmMBx, TOR-07-OgGR571). It reuses the row's existing
+`onToggle` callback path unchanged, and the pressed state is derived from
+`habit.completions.includes(todayLocalDate())` exactly as the checkbox's `checked` state
+was — so the row stays a pure function of the habit (decision 23) and the m1i25n4
+toggle machinery (`toggleToday`, decision 22) is untouched. The obsolete `.habit-done`
+checkbox rules were removed from `src/styles.css`.
+
+**Rationale:** A pressed-state button reads as a deliberate daily action and gives
+assistive tech the toggled state without checkbox semantics sitting next to the row's
+action buttons. Keeping the derivation identical meant the store, streak engine, and
+re-render path needed zero changes — the full suite staying green (110/110) was the
+regression signal. The one-hot-element rule (decision 28, TOR-07-EXjNoVz) is preserved:
+the Add button remains the sole flame-accented control, and the done state's success
+green is the spec's "done must NOT carry the flame accent" note applied to the button.
+(The ember tint observed mid-verification on the undone button was the vendored
+`pf-btn--secondary:hover` rule with the pointer parked on it — at rest the undone state
+is neutral.)
+
+## 30. Streak badge = amber number over a mono "DAY STREAK" caption (Epic lfstJmm)
+
+**Decision:** `.streak-badge` is restructured into two stacked spans: `.streak-number`
+(the amber display-face hero number — unchanged TOR-07-pa7ak24 treatment, now with
+`tabular-nums`) and `.streak-caption` ("DAY STREAK", mono caption ramp: `--font-mono`,
+`--text-micro`, `--tracking-eyebrow`, uppercase, muted). Every badge on every row —
+active and archived alike — carries the caption (TOR-04-rknaMfI); the badge's
+`Current streak: N` aria-label is unchanged, and the number keeps its amber treatment
+rather than adopting the rejected `pf-label` class (decision 28).
+
+**Rationale:** A bare number next to a habit name is ambiguous; an eyebrow-style mono
+caption names the metric without competing with the hero number, following the design
+system's caption ramp (cf. `.pf-label` in the vendored token layer) directly rather
+than reusing that muted class, which would defeat the prominence TOR. The badge keeps
+its `Current streak: N` aria-label, so screen readers get the sentence, sighted users
+get the label, and neither is worse off.
+
+## 31. The Active view teaches the streak rule with a one-line help hint (Epic lfstJmm)
+
+**Decision:** `renderHabitList()` in `src/ui/habit-list.ts` prepends a
+`p.habit-help-hint.pf-hint` — "Mark done tomorrow to continue a streak — a missed day
+resets it to 1." (exact TOR-04-HiRBSAa wording) — as the first element of the list
+region on the Active filter only; it is absent on Archived and All, and the region is
+cleared via `replaceChildren()` before each render, so the hint never duplicates or
+lingers across filter switches. The hint renders before the rows or the empty state,
+so it is present even when the Active list is empty.
+
+**Rationale:** The streak rule's reset clause is the one behavior users discover only
+by losing a streak; surfacing it exactly where the daily list is read teaches it before
+it matters. Keying the hint to Active keeps the Archived audit view and the All
+inventory view uncluttered, and deriving it per render from the filter (like everything
+else in the list region) keeps the list a pure function of `(state, filter)`.
+
+## 32. Known Issues and Deferred Work
 
 - **Favicon 404 (non-blocking):** browsers auto-request `/favicon.ico` and the Vite dev
   server returns a 404, producing one console error per page load. No TOR requires an
   icon; candidate for `/peak-workflow:quick-fix`. (Epic tVQOvBV wrapup; carried through
-  C1R8qkJ, AQNWtiB, m1i25n4, XDc5Tpp, and NZK8kqE.)
+  C1R8qkJ, AQNWtiB, m1i25n4, XDc5Tpp, NZK8kqE, and lfstJmm.)
 - **Brand webfonts load from Google Fonts CDN:** the vendored `tokens/fonts.css`
   fetches the brand webfonts from Google Fonts on first load (per ConOps §6 and the
   epic spec); TOR-07-ywpamQm pins the system-fallback degradation path. If licensed
@@ -448,9 +515,10 @@ the vendored `tokens/fonts.css` Google Fonts `@import` plus `preconnect` links i
 - **CI pipeline:** the deploy workflow runs the quality gates (lint, tests, build) on
   pushes to `main`; per-PR gates and `vX.Y.Z` tag responses are still future work.
 
-*(Closed in m1i25n4: the "unwired row mounts" item — the "Done today" checkbox and streak
-badge are wired, TOR-03/TOR-04 coverage is in place, and duplicate-row independence was
-re-verified at the interaction level, closing the AQNWtiB follow-up from decision 16.
+*(No new known issues from Epic lfstJmm. Closed in m1i25n4: the "unwired row mounts"
+item — the "Done today" checkbox and streak badge are wired, TOR-03/TOR-04 coverage is in
+place, and duplicate-row independence was re-verified at the interaction level, closing
+the AQNWtiB follow-up from decision 16.
 Closed in XDc5Tpp: the "minimal filter behavior" item — the full filtering/views epic
 shipped the three-segment control, per-view rows with the archived tag, and the
 TOR-05-0maiBlC empty states, closing the AQNWtiB deferral from decision 20.)*
