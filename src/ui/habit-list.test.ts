@@ -233,4 +233,28 @@ describe('renderHabitList', () => {
     const empty = listEl.querySelector<HTMLElement>('.empty-state')!;
     expect(empty.textContent).toBe('No archived habits.');
   });
+
+  // Quick-fix row-ui-mobile-parity: rows are semantic <li> elements inside a
+  // <ul.habit-rows>, matching the reference implementation's list structure;
+  // the help hint and empty state stay outside the list (a <ul> may not
+  // contain <p> children).
+  it('renders rows as li elements inside ul.habit-rows with the hint outside the list', () => {
+    renderHabitList(listEl, TWO_ACTIVE_ONE_ARCHIVED, 'active', callbacks);
+
+    const rowsList = listEl.querySelector('ul.habit-rows')!;
+    expect(rowsList).not.toBeNull();
+    const rows = rowsList.querySelectorAll('li.habit-row');
+    expect(rows).toHaveLength(2);
+    for (const row of rows) {
+      expect(row.tagName).toBe('LI');
+    }
+    // Hint and empty state (when present) are siblings of the list, not
+    // children of it.
+    expect(listEl.querySelector('.habit-help-hint')).not.toBeNull();
+    expect(rowsList.querySelector('.habit-help-hint')).toBeNull();
+
+    renderHabitList(listEl, NO_HABITS, 'active', callbacks);
+    expect(listEl.querySelector('ul.habit-rows')).toBeNull();
+    expect(listEl.querySelector('.empty-state')).not.toBeNull();
+  });
 });

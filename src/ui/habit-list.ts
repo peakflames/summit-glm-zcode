@@ -62,5 +62,11 @@ export function renderHabitList(
     listEl.append(empty);
     return;
   }
-  listEl.append(...habits.map((habit) => renderHabitRow(habit, callbacks)));
+  // Quick-fix row-ui-mobile-parity: rows live in a semantic <ul> (each row is
+  // an <li> from renderHabitRow). The hint and empty state stay outside the
+  // list as siblings — a <ul> may not contain <p> children.
+  const rows = document.createElement('ul');
+  rows.className = 'habit-rows';
+  rows.append(...habits.map((habit) => renderHabitRow(habit, callbacks)));
+  listEl.append(rows);
 }

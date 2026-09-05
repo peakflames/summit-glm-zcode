@@ -11,7 +11,10 @@ body {
 }
 
 .shell {
-  max-width: 32rem;
+  /* 45rem matches the reference implementation's app-shell width (720px);
+     the row's name + badge + two pf-btn--md controls need it to stay on one
+     line at desktop (quick-fix row-ui-mobile-parity). */
+  max-width: 45rem;
   margin: 0 auto;
   padding: var(--space-6) var(--space-4);
   display: flex;
@@ -117,16 +120,31 @@ body {
 }
 
 /* pf-card provides the surface; the row overrides padding for a compact list
-   row and drops the old divider borders in favor of card borders. */
+   row and drops the old divider borders in favor of card borders. flex-wrap
+   plus the 480px reflow below (quick-fix row-ui-mobile-parity) lets the name
+   drop to its own full-width line on narrow screens instead of being crushed
+   between the two buttons. */
 .habit-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
 }
 
+/* Semantic row list (quick-fix row-ui-mobile-parity): the <ul> that holds the
+   <li.habit-row> elements; the hint and empty state live outside it. */
+.habit-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
 .habit-name {
-  flex: 1;
+  flex: 1 1 auto;
   overflow-wrap: anywhere;
   color: var(--text-heading);
   font-weight: var(--weight-medium);
@@ -136,19 +154,20 @@ body {
    face, heavier and larger than the habit name on the same row. Epic lfstJmm
    stacks the "DAY STREAK" caption beneath the number (TOR-04-rknaMfI). */
 .streak-badge {
-  min-width: 1.75rem;
+  min-width: 3.5rem;
   padding: 0 var(--space-1);
   border-radius: var(--radius-sm);
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
+  line-height: 1.1;
 }
 
 .streak-number {
   font-family: var(--font-display);
-  font-size: var(--text-h3);
-  font-weight: var(--weight-bold);
+  font-size: var(--text-h2);
+  font-weight: var(--weight-black);
   color: var(--text-accent);
   font-variant-numeric: tabular-nums;
 }
@@ -172,16 +191,45 @@ body {
 
 /* TOR-07-OgGR571 (Epic lfstJmm): the check-in toggle button. The undone
    state's neutral outlined treatment comes from pf-btn--secondary; the done
-   state is success green via --status-success — never the flame accent; the
-   Add button is the one hot element (TOR-07-EXjNoVz). */
+   state is quiet success green — success-bg fill with success text and border,
+   never the flame accent; the Add button is the one hot element
+   (TOR-07-EXjNoVz). The min-width keeps the toggle a stable, deliberate
+   control across both labels (quick-fix row-ui-mobile-parity). */
 .habit-done-btn {
   flex: 0 0 auto;
+  min-width: 7.5rem;
 }
 
 .habit-done-btn[aria-pressed='true'] {
-  background: var(--status-success);
+  background: var(--status-success-bg);
   border-color: var(--status-success);
-  color: var(--obsidian-1000);
+  color: var(--status-success);
+}
+
+/* Quick-fix row-ui-mobile-parity: narrow-screen reflow — the name takes its
+   own full-width line and the badge + buttons share the second line. */
+@media (max-width: 480px) {
+  .habit-row {
+    gap: var(--space-2);
+    justify-content: space-between;
+  }
+
+  .habit-name {
+    flex-basis: 100%;
+  }
+
+  .streak-badge {
+    min-width: 3rem;
+  }
+
+  .habit-done-btn {
+    min-width: 6.5rem;
+  }
+
+  .habit-done-btn,
+  .habit-action {
+    padding: 0 var(--space-3);
+  }
 }
 
 .shell-footer {
