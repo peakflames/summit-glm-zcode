@@ -442,10 +442,11 @@ the vendored `tokens/fonts.css` Google Fonts `@import` plus `preconnect` links i
 - **Schema migrations:** not needed yet — `schemaVersion: 1` is the only version; an
   unknown version currently routes to the recovery banner ("Start fresh"). Migrations are
   future scope when a schema change first ships.
-- **Hosting target:** the production artifact is static `dist/` output; hosting target
-  (e.g., GitHub Pages) is TBD.
-- **No CI pipeline:** when one is added, configure it to run the quality gates on every
-  PR and to respond to `vX.Y.Z` tags.
+- **Hosting target:** GitHub Pages — `.github/workflows/deploy-pages.yml` deploys `main`
+  to `https://peakflames.github.io/summit-glm-zcode/` on every push (see AGENTS.md's
+  Deployment section for the base-path gate).
+- **CI pipeline:** the deploy workflow runs the quality gates (lint, tests, build) on
+  pushes to `main`; per-PR gates and `vX.Y.Z` tag responses are still future work.
 
 *(Closed in m1i25n4: the "unwired row mounts" item — the "Done today" checkbox and streak
 badge are wired, TOR-03/TOR-04 coverage is in place, and duplicate-row independence was

@@ -7,6 +7,23 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.3.0] — 05-Sep-2026
+
+### Added
+
+- Deployed Summit to GitHub Pages via a GitHub Actions workflow that lints, tests, and
+  builds on every push to `main`, publishing the result automatically.
+- App favicon, sourced from the PeakFlames logo at peakflames.org.
+
+### Changed
+
+- README: added a "Built with Peak-Workflow" section highlighting Summit as the
+  peak-workflow reference example, with a ZCode/GLM usage snapshot.
+
+### Fixed
+
+---
+
 ## [0.2.0] — 05-Sep-2026
 
 ### Added
