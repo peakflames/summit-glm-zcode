@@ -1,7 +1,7 @@
 # Summit — Product Vision & Brief
 
-**Document Version:** 1.1
-**Date:** 2026-09-04
+**Document Version:** 1.2
+**Date:** 2026-09-05
 **Status:** Draft
 
 ---
@@ -59,7 +59,7 @@ product vision to independently verified epics.
 | # | Goal | Success criterion |
 |---|---|---|
 | G1 | Add a habit | New habit appears in the list immediately and survives a page reload |
-| G2 | Mark done for today | One click on the row's "Done today" checkbox; state persists across reload/restart |
+| G2 | Mark done for today | One click on the row's "Done today" toggle button; state persists across reload/restart |
 | G3 | See streaks | Each row shows its current streak; checking today off updates it immediately |
 | G4 | Filter active/archived | Filter control switches between Active / Archived / All; archived habits are restorable |
 | G5 | Local persistence | All state lives in `localStorage`; the app makes zero network calls; works fully offline |
@@ -75,12 +75,14 @@ product vision to independently verified epics.
 - *Not in MVP:* renaming, permanent deletion (see §7 and §11)
 
 ### Daily Check-in
-- Per-row "Done today" checkbox for the current local calendar day
-- The checkbox is a toggle — an accidental check-off can be undone, and the streak
+- Per-row "Done today" toggle button for the current local calendar day; when today is
+  completed the button reads "Done ✓" in the design system's success green
+- The button is a toggle — an accidental check-off can be undone, and the streak
   recomputes
 
 ### Streaks
-- Current streak badge shown on every habit row
+- Current streak badge shown on every habit row: the streak number with a
+  "DAY STREAK" caption beneath it
 - Streak recomputes from completion history on every change
 
 **Streak rule (normative for requirements):** a habit's *current streak* is the count of
@@ -90,6 +92,8 @@ truly ends). If neither today nor yesterday is completed, the streak is **0**.
 
 ### List & Filtering
 - Single habit list on one screen
+- One-line help hint above the list on the Active view: "Mark done tomorrow to continue
+  a streak — a missed day resets it to 1."
 - Filter control with three segments: **All | Active | Archived**; default view is **Active**
 - Archived rows in the All view are visually tagged
 - Clear empty states for each filter ("No habits yet", "No active habits", "No archived habits")
@@ -120,10 +124,11 @@ truly ends). If neither today nor yesterday is completed, the streak is **0**.
 ## 8. Key Business Scenarios
 
 1. **First habit, first streak** — A first-time visitor opens Summit, is greeted by an
-   empty list, adds "Read 20 minutes" through the Add habit input, checks "Done today",
-   and watches the streak badge go 0 → 1. Reloading confirms the habit and streak
-   survived. *(Actor: first-time visitor; Trigger: opens Summit; Goal: start tracking;
-   Outcome: first persisted habit with a live streak.)*
+   empty list and a one-line hint about how streaks work, adds "Read 20 minutes" through
+   the Add habit input, clicks "Done today", and watches the streak number go 0 → 1.
+   Reloading confirms the habit and streak survived. *(Actor: first-time visitor;
+   Trigger: opens Summit; Goal: start tracking; Outcome: first persisted habit with a
+   live streak.)*
 2. **Daily check-in** — A returning user opens Summit the next day, sees yesterday's
    habit with streak 1 and today unchecked, clicks "Done today", and the badge updates
    to 2 instantly. *(Actor: returning user; Trigger: new day; Goal: record today;
@@ -147,6 +152,16 @@ truly ends). If neither today nor yesterday is completed, the streak is **0**.
 - One screen, no navigation: input on top, list below, footer at the bottom — the whole
   product fits a single view
 - The streak number is the visual hero of each row; everything else is subordinate
+- The check-in control is a toggle **button**, not a bare checkbox *(amended 2026-09-05
+  for row-UI parity with the sibling Summit implementation)*: unchecked it reads
+  "Done today" in a neutral outlined treatment; checked it reads "Done ✓" in the design
+  system's success green — never the flame accent, so the Add button remains the one hot
+  element
+- The streak number is paired with a "DAY STREAK" caption beneath it, set in the design
+  system's mono caption style
+- A one-line streak-rule hint ("Mark done tomorrow to continue a streak — a missed day
+  resets it to 1.") sits between the filter and the list on the Active view, teaching
+  the honest-reset rule before the first check-in
 - Instant feedback: every action updates the UI and persisted state immediately, no
   reloads or spinners
 - Summit adopts the **PeakFlames Design System** (the shared design language for

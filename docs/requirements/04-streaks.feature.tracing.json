@@ -1,7 +1,7 @@
 {
   "feature_id": "04",
   "feature_file": "04-streaks.feature.md",
-  "generated": "2026-09-04",
+  "generated": "2026-09-05",
   "generator": "haiku-sub-agent via /peak-workflow:capture-requirements",
   "requirements": [
     {
@@ -87,14 +87,14 @@
         "vision": [
           {
             "section": "§5 — Goals & Success Criteria (MVP)",
-            "paraphrase": "Goal G3: checking today off updates the streak immediately."
+            "paraphrase": "Serves goal G3 — the streak a row displays answers to today's check-in in the same instant it happens, never a step behind."
           }
         ],
         "conops": [
           {
             "scenario": "S1",
             "step": 7,
-            "paraphrase": "The badge moves 0 to 1 in the already-rendered page — instant feedback."
+            "paraphrase": "The count climbs 0 → 1 on the already-drawn page the moment the user clicks \"Done today\" — feedback arrives without any reload."
           }
         ]
       }
@@ -114,6 +114,62 @@
             "scenario": "S5",
             "step": 5,
             "paraphrase": "A restored habit shows its history-derived streak — alive if yesterday or today counts, else 0."
+          }
+        ]
+      }
+    },
+    {
+      "id": "TOR-04-rknaMfI",
+      "title": "The application shall display a \"DAY STREAK\" caption beneath the streak number in every habit row's streak badge",
+      "traces_to": {
+        "vision": [
+          {
+            "section": "§6 — MVP Scope Summary",
+            "paraphrase": "The MVP defines the row's streak badge as a labeled count rather than a bare number, so the motivating figure reads with its meaning at a glance."
+          },
+          {
+            "section": "§9 — Design Direction",
+            "paraphrase": "The design direction pairs the hero number with a caption set directly under it, making every row's streak self-describing instead of relying on the user to guess what the figure counts; it further specifies the caption is set in the design system's mono caption style, which this TOR pins alongside the caption's presence and placement."
+          }
+        ],
+        "conops": [
+          {
+            "scenario": "§3 — Proposed System (habit-row description)",
+            "step": null,
+            "paraphrase": "The to-be row anatomy is fixed as name, streak badge with its \"DAY STREAK\" caption beneath the number, Done toggle, and Archive/Restore action — the caption is part of every row's structure, not an optional flourish."
+          },
+          {
+            "scenario": "S1",
+            "step": 5,
+            "paraphrase": "Even a brand-new habit's very first row shows the caption under its zero streak, so the badge format is established from the user's first encounter with the list."
+          }
+        ]
+      }
+    },
+    {
+      "id": "TOR-04-HiRBSAa",
+      "title": "The application shall display a help hint above the habit list on the Active view explaining streak continuation and the honest reset, and shall not display it on the Archived view",
+      "traces_to": {
+        "vision": [
+          {
+            "section": "§6 — MVP Scope Summary",
+            "paraphrase": "The MVP's list specification reserves a single-line hint above the Active list that teaches how streaks continue and what a missed day costs."
+          },
+          {
+            "section": "§9 — Design Direction",
+            "paraphrase": "The design direction positions the streak-rule hint where it is read before the first check-in, teaching the honest-reset rule up front rather than letting the user discover it through a lost streak."
+          }
+        ],
+        "conops": [
+          {
+            "scenario": "S1",
+            "step": 2,
+            "paraphrase": "The hint is on screen from the very first boot of the app, so a first-time visitor meets the streak rule before any habit — or any streak — exists."
+          },
+          {
+            "scenario": "§7 — Functional Summary (streak-rule help hint row)",
+            "step": null,
+            "paraphrase": "The functional summary lists the one-line Active-view hint as its own capability whose job is teaching the honest-reset rule; this TOR makes that observable, including its absence once the user switches to Archived."
           }
         ]
       }

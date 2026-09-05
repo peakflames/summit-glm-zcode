@@ -40,10 +40,29 @@ Scenario: [TOR-04-Dzlhzul] The application shall display a streak of 0 when neit
 
 Scenario: [TOR-04-Ft8iQbI] The application shall update the streak badge immediately when "Done today" is toggled, without a page reload
     Given a habit whose streak badge reads 0 because its last completion is stale
-    When the user checks "Done today" on that row
+    When the user clicks "Done today" on that row
     Then the streak badge changes to 1 in the already-rendered page, with no reload
 
 Scenario: [TOR-04-GN2fJoI] The application shall recompute a restored habit's streak from its preserved completion history
     Given an archived habit is restored to the Active view
     When its row renders
     Then the streak badge shows the history-derived value: the consecutive-days count if yesterday or today is completed, otherwise 0
+
+---
+
+# --------------------------------------------------------------------------------------------------
+# Streak Presentation (added 2026-09-05 — row-UI parity discovery; PV §6/§9 v1.2)
+# --------------------------------------------------------------------------------------------------
+
+Scenario: [TOR-04-rknaMfI] The application shall display a "DAY STREAK" caption beneath the streak number in every habit row's streak badge
+    Given at least one habit exists in the current view
+    When the habit list renders
+    Then each row's streak badge shows the streak number with the caption text "DAY STREAK" directly beneath it
+    And the caption is rendered in the design system's mono caption style
+    And the caption appears on active and archived rows alike
+
+Scenario: [TOR-04-HiRBSAa] The application shall display a help hint above the habit list on the Active view explaining streak continuation and the honest reset, and shall not display it on the Archived view
+    Given the Active view is displayed
+    When the user views the page
+    Then a help hint is visible above the habit list reading "Mark done tomorrow to continue a streak — a missed day resets it to 1."
+    And switching to the Archived view removes the help hint

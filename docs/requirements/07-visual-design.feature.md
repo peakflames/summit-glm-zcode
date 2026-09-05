@@ -85,3 +85,20 @@ Scenario: [TOR-07-pa7ak24] The application shall render the streak number more v
     Given the app is loaded with at least one habit present
     When the user views a habit row
     Then the row's streak number should be rendered larger and/or heavier than the habit name on that row
+
+---
+
+# --------------------------------------------------------------------------------------------------
+# Check-in Control Treatment (added 2026-09-05 — row-UI parity discovery; PV §9 v1.2)
+# --------------------------------------------------------------------------------------------------
+
+Scenario: [TOR-07-OgGR571] The web application shall render the check-in control as a toggle button whose undone state reads "Done today" in a neutral outlined treatment and whose done state reads "Done ✓" in the design system's success green, with neither state carrying the flame accent
+    #
+    # Note:
+    #   1. Added by the row-UI parity discovery (2026-09-05). Preserves the one-hot-element
+    #      rule (TOR-07-EXjNoVz): the Add button remains the only flame-accented control.
+    #
+    Given a habit row in the Active view whose check-in control is a toggle button, considered first in its undone state and then in its done state after today is completed
+    When the user views the button in each state
+    Then the undone state reads "Done today" with a neutral outlined treatment and the done state reads "Done ✓" with the design system's success-green treatment
+    And neither state carries the flame accent, which remains reserved for the Add button

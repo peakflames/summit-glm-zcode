@@ -8,17 +8,17 @@ Feature: 3.0 Daily Check-in
 # Recording Today's Completion
 # --------------------------------------------------------------------------------------------------
 
-Scenario: [TOR-03-WUQGIE9] The application shall record today's completion when the "Done today" checkbox is clicked
-    Given a habit row whose "Done today" checkbox is unchecked
-    When the user clicks the checkbox
-    Then the checkbox is checked
+Scenario: [TOR-03-WUQGIE9] The application shall record today's completion when the "Done today" toggle button is clicked
+    Given a habit row whose "Done today" toggle button is in its undone state
+    When the user clicks the "Done today" button
+    Then the button reads "Done ✓" in its done state
     And the habit's stored completions contain exactly one entry for today's date
-    And the checked state persists after a page reload
+    And the done state persists after a page reload
 
-Scenario: [TOR-03-M5RmMBx] The application shall remove today's completion when an already-checked "Done today" checkbox is clicked again
+Scenario: [TOR-03-M5RmMBx] The application shall remove today's completion when an already-done "Done today" toggle button is clicked again
     Given a habit with today's completion already recorded and a visible streak
-    When the user clicks the checked "Done today" checkbox
-    Then the checkbox is unchecked
+    When the user clicks the "Done ✓" button
+    Then the button returns to its undone "Done today" state
     And today's date is removed from the habit's stored completions
     And the streak badge recomputes to the value for consecutive days ending yesterday
 
@@ -34,5 +34,5 @@ Scenario: [TOR-03-albP5kN] The application shall record completions as local cal
     #      the day boundary for users far from UTC.
     #
     Given the user's local time is 2026-09-04 23:30 while the UTC date is already 2026-09-05
-    When the user checks "Done today"
+    When the user clicks "Done today"
     Then the stored completion for the habit is the string "2026-09-04"

@@ -1,43 +1,43 @@
 {
   "feature_id": "03",
   "feature_file": "03-daily-checkin.feature.md",
-  "generated": "2026-09-04",
+  "generated": "2026-09-05",
   "generator": "haiku-sub-agent via /peak-workflow:capture-requirements",
   "requirements": [
     {
       "id": "TOR-03-WUQGIE9",
-      "title": "The application shall record today's completion when the \"Done today\" checkbox is clicked",
+      "title": "The application shall record today's completion when the \"Done today\" toggle button is clicked",
       "traces_to": {
         "vision": [
           {
             "section": "§5 — Goals & Success Criteria (MVP)",
-            "paraphrase": "Goal G2: one click on Done today records the day and persists."
+            "paraphrase": "Serves goal G2 — completing a habit for today is a single press of the row's check-in button, and the recorded state outlasts a reload or restart."
           }
         ],
         "conops": [
           {
             "scenario": "S1",
             "step": 6,
-            "paraphrase": "Checking the box is the entire daily ritual — the habit's core interaction."
+            "paraphrase": "Pressing the row's \"Done today\" button is the entire daily ritual — the app's core interaction, kept down to one act."
           }
         ]
       }
     },
     {
       "id": "TOR-03-M5RmMBx",
-      "title": "The application shall remove today's completion when an already-checked \"Done today\" checkbox is clicked again",
+      "title": "The application shall remove today's completion when an already-done \"Done today\" toggle button is clicked again",
       "traces_to": {
         "vision": [
           {
             "section": "§6 — MVP Scope Summary",
-            "paraphrase": "The checkbox is a toggle: an accidental check-off can be undone and the streak recomputes."
+            "paraphrase": "The check-in control is deliberately reversible — a mistaken completion can be taken back on the spot, with the streak recomputed to match."
           }
         ],
         "conops": [
           {
             "scenario": "S1",
             "step": 7,
-            "paraphrase": "Check-in state must be correctable in the same session it was made."
+            "paraphrase": "The same button that records the day must also be able to reverse it within the same sitting, so check-in state is always correctable."
           }
         ]
       }
@@ -68,14 +68,14 @@
         "vision": [
           {
             "section": "§10 — Data Strategy",
-            "paraphrase": "Completion identifiers are local dates in YYYY-MM-DD form."
+            "paraphrase": "Each completion is keyed by the local calendar date on which it happened, written in YYYY-MM-DD form."
           }
         ],
         "conops": [
           {
             "scenario": "S2",
             "step": null,
-            "paraphrase": "Streak semantics are local-day based (ConOps §8); UTC day boundaries would misalign check-ins."
+            "paraphrase": "Streak arithmetic runs on the user's local days (ConOps §8); anchoring check-ins to UTC would shift the day boundary for anyone far from UTC."
           }
         ]
       }

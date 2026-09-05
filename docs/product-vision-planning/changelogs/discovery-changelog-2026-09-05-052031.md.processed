@@ -1,0 +1,51 @@
+# Discovery Changelog
+
+**Date:** 2026-09-05
+**Mode:** Brownfield (post-MVP ideation)
+**Previous Version:** product-vision.md 1.1 / concept-of-operations.md 1.1
+
+## What Changed
+
+| Document | Section | Change Type | Summary |
+|----------|---------|-------------|---------|
+| product-vision.md | §5 Goals (G2) | Modified | "Done today" checkbox → toggle button in the success criterion |
+| product-vision.md | §6 Daily Check-in | Modified | Per-row checkbox → "Done today"/"Done ✓" toggle button (success green when done) |
+| product-vision.md | §6 Streaks | Modified | Streak badge now specified as number + "DAY STREAK" caption |
+| product-vision.md | §6 List & Filtering | Added | One-line streak-rule help hint above the list on the Active view |
+| product-vision.md | §8 Scenario 1 | Modified | Mentions the help hint and button click instead of checkbox check |
+| product-vision.md | §9 Design Direction | Added | Row-UI parity amendment (2026-09-05): toggle button treatment, DAY STREAK caption, help hint |
+| concept-of-operations.md | §3 Proposed System | Modified | Row UI re-described: toggle button, badge caption, Active-view help hint; Done button explicitly not flame-accented |
+| concept-of-operations.md | §5 Scenarios 1–2 | Modified | Steps updated from checkbox wording to button wording ("Done ✓", success green) |
+| concept-of-operations.md | §6 Data Flow | Modified | UI diagram gains the help hint and the caption/toggle row contents |
+| concept-of-operations.md | §7 Functional Summary | Modified | Check-in and streak rows updated; help hint added as a capability row |
+| concept-of-operations.md | §9 Glossary | Added | "Done toggle" and "Help hint" terms |
+
+## New Capabilities Identified
+
+- **Done toggle button** — the per-row check-in control becomes a button reading
+  "Done today" (neutral outlined) when today is not completed and "Done ✓" (success
+  green) when it is. Behavior is unchanged: same toggle semantics, same idempotent
+  store mutation, same streak recomputation. This rewrites the TOR-03 checkbox
+  Given/When/Then wording.
+- **Streak caption** — the streak badge gains a "DAY STREAK" caption beneath the
+  number on every row (active and archived). Refines TOR-04-5xu6Aag /
+  TOR-07-pa7ak24 presentation.
+- **Streak-rule help hint** — new static copy above the list on the Active view:
+  "Mark done tomorrow to continue a streak — a missed day resets it to 1." No
+  existing TOR covers it; needs a new TOR ID.
+
+## Priority Signal
+
+Visual/UX parity with the sibling Summit implementation is the goal; **behavior,
+data model, and dependencies are unchanged**. The one-hot-element rule (flame accent
+reserved for the Add button) is explicitly preserved — the sibling's flame-accented
+unchecked "Done today" treatment was considered and **rejected**; the unchecked
+button is neutral outlined, the checked state is success green.
+
+## Deferred Items
+
+- Nothing else deferred this cycle; the flame-accent amendment option was rejected
+  rather than deferred.
+- Interview defaults were applied (no user feedback received during the session):
+  Active-view-only help hint, caption on all rows, "Done today"/"Done ✓" labels.
+  Adjustable at review before the docs branch merges.
