@@ -322,9 +322,15 @@ None — a client-only SPA has no background services. Any recurring client-side
 ## 8. Container / Infrastructure
 
 No container image — the production artifact is the static output of `npm run build`
-(`tsc --noEmit && vite build`), emitted to `dist/`. Deployment is static hosting of
-`dist/` (target TBD, e.g., GitHub Pages). There is no server, no CI pipeline yet (when one
-is added it should run the quality gates on every PR and respond to `vX.Y.Z` tags).
+(`tsc --noEmit && vite build`), emitted to `dist/`. Summit deploys to **GitHub Pages**
+(project page at `https://peakflames.github.io/summit-glm-zcode/`).
+`.github/workflows/deploy-pages.yml` runs lint, tests, and the build on every push to
+`main`, then publishes `dist/` via `actions/upload-pages-artifact` + `actions/deploy-pages`.
+Because Pages serves project pages from `/<repo>/` rather than `/`, the build sets
+`base: '/summit-glm-zcode/'` in `vite.config.ts` — gated behind a `GH_PAGES=true` env var
+the workflow sets, so local `dev`/`build`/`preview` are unaffected. See AGENTS.md's
+Deployment section for details. A full CI pipeline (quality gates on every PR and
+responses to `vX.Y.Z` tags) is still future work.
 
 ---
 

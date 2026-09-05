@@ -164,8 +164,30 @@ A successful build (compile) does NOT equal working code. The workflow MUST be:
 5. **Reference-example quality bar.** Favor clarity and a clean peak-workflow lifecycle
    walkthrough over feature breadth.
 
+## Deployment
+
+Summit deploys to **GitHub Pages** as a static site, served as a project page at
+`https://peakflames.github.io/summit-glm-zcode/`.
+
+- **Workflow:** `.github/workflows/deploy-pages.yml` runs on every push to `main` (plus
+  manual `workflow_dispatch`). It runs lint, tests, and `npm run build`, then publishes
+  `dist/` via `actions/upload-pages-artifact` + `actions/deploy-pages`.
+- **Repo setting:** Pages is configured with source **GitHub Actions** (not "Deploy from a
+  branch") — set via
+  `gh api repos/peakflames/summit-glm-zcode/pages -X POST -f build_type=workflow`.
+- **Base path:** GitHub Pages project pages are served from `/<repo>/`, not `/`. The
+  production build sets `base: '/summit-glm-zcode/'` in `vite.config.ts`, gated behind a
+  `GH_PAGES=true` env var that only the deploy workflow sets — `npm run dev`, `npm run
+  build`, and `npm run preview` run locally continue to use root-relative paths,
+  unaffected. Do not hardcode `/summit-glm-zcode/` anywhere else; always resolve asset
+  URLs through Vite's `base` so a repo rename doesn't silently break the deployed build.
+
 ## Important Reminders
 
+- Local production-build parity: `npm run build && npm run preview` deliberately does NOT
+  reproduce the GitHub Pages base path (see Deployment above) — a blank page under
+  `/summit-glm-zcode/` in production but a working page under `npm run preview` is
+  expected, not a regression, unless you also set `GH_PAGES=true` locally.
 - `AGENTS.md` (this file) is loaded automatically every session by zcode — keep it accurate.
 - This repo is the **public reference example** for peak-workflow — clarity over feature
   breadth. Do not add dependencies without an explicit recorded decision.
@@ -234,5 +256,6 @@ a clean working tree; all epic branches merged with `--no-ff`.
    git push origin main develop && git push origin vX.Y.Z
    ```
 
-**Note:** No CI pipeline exists yet — when one is added, configure it to run the quality
-gates on every PR and to respond to `vX.Y.Z` tags.
+**Note:** A GitHub Actions workflow (`.github/workflows/deploy-pages.yml`) deploys `main`
+to GitHub Pages on every release (see Deployment above). A full CI pipeline — quality gates
+on every PR and responses to `vX.Y.Z` tags — is still future work.
