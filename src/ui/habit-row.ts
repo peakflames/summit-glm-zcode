@@ -1,30 +1,30 @@
-// Habit row rendering (Epic AQNWtiB). One row per habit: name, streak badge,
-// "Done today" checkbox, and the archive/restore action. The checkbox is a
-// mount only in this epic — its toggle wiring and the streak computation
-// (streaks.ts) arrive with epic m1i25n4.
+// Habit row rendering (Epic AQNWtiB, wired in Epic m1i25n4). One row per
+// habit: name, streak badge, "Done today" checkbox, and the archive/restore
+// action. The row is a pure function of the habit — the checkbox reflects the
+// stored completions and the badge comes from streaks.ts — so every render
+// (initial, post-toggle, restored) is history-derived with no special cases.
 
 import type { Habit } from '../lib/storage';
+import { currentStreak, todayLocalDate } from '../lib/streaks';
 
 export interface HabitRowCallbacks {
+  onToggle: (id: string) => void;
   onArchive: (id: string) => void;
   onRestore: (id: string) => void;
 }
-
-// The streak engine is epic m1i25n4 scope; until it lands the badge shows 0,
-// which is the correct value for every habit this epic can create through the
-// UI (no completions yet).
-const STREAK_PLACEHOLDER = '0';
 
 export function renderHabitRow(habit: Habit, callbacks: HabitRowCallbacks): HTMLElement {
   const row = document.createElement('div');
   row.className = 'habit-row';
   row.dataset.habitId = habit.id;
 
+  const today = todayLocalDate();
   const done = document.createElement('input');
   done.type = 'checkbox';
   done.className = 'habit-done';
-  done.checked = false;
+  done.checked = habit.completions.includes(today);
   done.setAttribute('aria-label', `Done today: ${habit.name}`);
+  done.addEventListener('change', () => callbacks.onToggle(habit.id));
   row.append(done);
 
   const name = document.createElement('span');
@@ -32,11 +32,12 @@ export function renderHabitRow(habit: Habit, callbacks: HabitRowCallbacks): HTML
   name.textContent = habit.name;
   row.append(name);
 
-  const streak = document.createElement('span');
-  streak.className = 'streak-badge';
-  streak.setAttribute('aria-label', `Current streak: ${STREAK_PLACEHOLDER}`);
-  streak.textContent = STREAK_PLACEHOLDER;
-  row.append(streak);
+  const streak = String(currentStreak(habit.completions, today));
+  const badge = document.createElement('span');
+  badge.className = 'streak-badge';
+  badge.setAttribute('aria-label', `Current streak: ${streak}`);
+  badge.textContent = streak;
+  row.append(badge);
 
   const action = document.createElement('button');
   action.type = 'button';

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi, afterEach } from 'vitest';
 import { renderApp } from './app';
 import { STORAGE_KEY } from './lib/storage';
+import { addDays, todayLocalDate } from './lib/streaks';
 import { readFileSync } from 'node:fs';
 
 function boot(): void {
@@ -422,5 +423,292 @@ describe('habit list: archive and restore', () => {
       '2026-09-03',
       '2026-09-04',
     ]);
+  });
+});
+
+// Epic m1i25n4 — daily check-in & streaks.
+function seedHabit(
+  overrides: Partial<{ id: string; name: string; archived: boolean; completions: string[] }> = {},
+): void {
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify({
+      schemaVersion: 1,
+      habits: [
+        {
+          id: 'gym-1',
+          name: 'Gym',
+          createdAt: '2026-08-01T08:00:00.000Z',
+          archived: false,
+          completions: [],
+          ...overrides,
+        },
+      ],
+    }),
+  );
+}
+
+function habitRow(index = 0): HTMLElement {
+  return document.querySelectorAll<HTMLElement>('.habit-row')[index]!;
+}
+
+function rowBadge(row: HTMLElement): string {
+  return row.querySelector<HTMLElement>('.streak-badge')!.textContent ?? '';
+}
+
+function rowCheckbox(row: HTMLElement): HTMLInputElement {
+  return row.querySelector<HTMLInputElement>('.habit-done')!;
+}
+
+function storedCompletions(id = 'gym-1'): string[] {
+  const doc = JSON.parse(localStorage.getItem(STORAGE_KEY)!) as {
+    habits: { id: string; completions: string[] }[];
+  };
+  return doc.habits.find((habit) => habit.id === id)!.completions;
+}
+
+// TOR-04-cS2CaLm (UI render level)
+// Given habits with the feature file's completion histories relative to today,
+// When the habit list renders,
+// Then each row's streak badge shows the expected streak from the table —
+// a gap resets the run (last row is 2, not 4).
+describe('habit list: streak badge rendering', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.restoreAllMocks();
+    bootShell();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  // TOR-04-5xu6Aag (UI level)
+  // Given at least one habit exists in the current view,
+  // When the habit list renders,
+  // Then each row displays a streak badge showing a non-negative integer.
+  it('renders a non-negative integer streak badge on every row', () => {
+    addHabitViaForm('Read 20 minutes');
+    addHabitViaForm('Meditate');
+
+    const badges = [...document.querySelectorAll<HTMLElement>('.streak-badge')];
+    expect(badges.length).toBe(2);
+    for (const badge of badges) {
+      expect(badge.textContent).toMatch(/^\d+$/);
+    }
+  });
+
+  it('renders the rule-table streaks from stored history', () => {
+    const today = todayLocalDate();
+    // [today, -1, -2, -3] → 4 consecutive; [today, -1, -3, -4] → 2 (gap resets).
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        schemaVersion: 1,
+        habits: [
+          {
+            id: 'run-1',
+            name: 'Run',
+            createdAt: '2026-08-01T08:00:00.000Z',
+            archived: false,
+            completions: [addDays(today, -3), addDays(today, -2), addDays(today, -1), today],
+          },
+          {
+            id: 'read-1',
+            name: 'Read',
+            createdAt: '2026-08-01T08:00:00.000Z',
+            archived: false,
+            completions: [addDays(today, -4), addDays(today, -3), addDays(today, -1), today],
+          },
+        ],
+      }),
+    );
+    bootShell(); // fresh render from the seeded document
+
+    expect(rowBadge(habitRow(0))).toBe('4');
+    expect(rowBadge(habitRow(1))).toBe('2');
+  });
+
+  // TOR-04-ixZC5y3 (UI render level)
+  // Given a habit whose most recent completions end yesterday consecutively
+  // and today is not completed,
+  // When the habit list renders,
+  // Then the badge shows the count of consecutive days ending yesterday.
+  it('keeps the yesterday-anchored streak visible when today is not yet completed', () => {
+    const today = todayLocalDate();
+    seedHabit({
+      completions: [addDays(today, -3), addDays(today, -2), addDays(today, -1)],
+    });
+    bootShell();
+
+    expect(rowBadge(habitRow(0))).toBe('3');
+    expect(rowCheckbox(habitRow(0)).checked).toBe(false);
+  });
+
+  // TOR-04-Dzlhzul (UI render level)
+  // Given a habit whose most recent completion is two or more days ago,
+  // When the habit list renders,
+  // Then the badge reads 0.
+  it('renders 0 when neither today nor yesterday is completed', () => {
+    seedHabit({ completions: [addDays(todayLocalDate(), -2)] });
+    bootShell();
+
+    expect(rowBadge(habitRow(0))).toBe('0');
+  });
+});
+
+// TOR-03-WUQGIE9 / TOR-03-M5RmMBx / TOR-03-zr7VepE / TOR-04-Ft8iQbI (UI level)
+// Check-in toggle: record, undo, idempotence across reloads, and instant
+// badge updates without a page reload.
+describe('habit list: done-today toggle', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.restoreAllMocks();
+    bootShell();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('checking "Done today" records today, persists, and survives a reload', () => {
+    seedHabit();
+    bootShell();
+    const checkbox = rowCheckbox(habitRow(0));
+    expect(checkbox.checked).toBe(false);
+
+    checkbox.click();
+
+    expect(rowCheckbox(habitRow(0)).checked).toBe(true);
+    const today = todayLocalDate();
+    expect(storedCompletions().filter((d) => d === today)).toHaveLength(1);
+
+    bootShell(); // simulate reload: fresh DOM, same storage
+    expect(rowCheckbox(habitRow(0)).checked).toBe(true);
+  });
+
+  it('unchecking removes today and recomputes the badge to the yesterday-anchored streak', () => {
+    const today = todayLocalDate();
+    seedHabit({ completions: [addDays(today, -1), today] });
+    bootShell();
+    expect(rowBadge(habitRow(0))).toBe('2');
+
+    rowCheckbox(habitRow(0)).click();
+
+    expect(rowCheckbox(habitRow(0)).checked).toBe(false);
+    expect(storedCompletions()).toEqual([addDays(today, -1)]);
+    expect(rowBadge(habitRow(0))).toBe('1');
+  });
+
+  it('toggling off and back on across a reload never duplicates today', () => {
+    seedHabit();
+    bootShell();
+
+    rowCheckbox(habitRow(0)).click();
+    bootShell(); // reload
+    rowCheckbox(habitRow(0)).click(); // undo
+    rowCheckbox(habitRow(0)).click(); // record again
+
+    const today = todayLocalDate();
+    expect(storedCompletions().filter((d) => d === today)).toHaveLength(1);
+  });
+
+  // TOR-04-Ft8iQbI (UI level)
+  // Given a habit whose streak badge reads 0 because its last completion is
+  // stale,
+  // When the user checks "Done today" on that row,
+  // Then the badge changes to 1 in the already-rendered page, with no reload.
+  it('updates the streak badge immediately on toggle, without a reload', () => {
+    seedHabit({ completions: [addDays(todayLocalDate(), -5)] });
+    bootShell();
+    expect(rowBadge(habitRow(0))).toBe('0');
+    const listEl = document.querySelector('#habit-list')!;
+
+    rowCheckbox(habitRow(0)).click();
+
+    // Same rendered page: the list element identity is unchanged (no reload,
+    // no re-boot) and the badge already shows 1.
+    expect(document.querySelector('#habit-list')).toBe(listEl);
+    expect(rowBadge(habitRow(0))).toBe('1');
+  });
+
+  // AQNWtiB follow-up: duplicate rows stay independent at the interaction
+  // level once the check-in toggle is wired.
+  it('toggling one of two same-named rows leaves the other untouched', () => {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        schemaVersion: 1,
+        habits: [
+          {
+            id: 'a-1',
+            name: 'Read',
+            createdAt: '2026-08-01T08:00:00.000Z',
+            archived: false,
+            completions: [],
+          },
+          {
+            id: 'a-2',
+            name: 'Read',
+            createdAt: '2026-08-01T08:00:00.000Z',
+            archived: false,
+            completions: [],
+          },
+        ],
+      }),
+    );
+    bootShell();
+
+    rowCheckbox(habitRow(0)).click();
+
+    expect(rowCheckbox(habitRow(0)).checked).toBe(true);
+    expect(rowCheckbox(habitRow(1)).checked).toBe(false);
+    expect(storedCompletions('a-1')).toEqual([todayLocalDate()]);
+    expect(storedCompletions('a-2')).toEqual([]);
+  });
+});
+
+// TOR-04-GN2fJoI (UI level)
+// Given an archived habit with preserved completion history,
+// When it is restored to the Active view,
+// Then its badge shows the history-derived value — the consecutive-days
+// count when yesterday or today is completed, otherwise 0.
+describe('habit list: restored habit streak recompute', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.restoreAllMocks();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('recomputes the streak from preserved history after restore', () => {
+    const today = todayLocalDate();
+    seedHabit({
+      archived: true,
+      completions: [addDays(today, -1), addDays(today, -2), today],
+    });
+    bootShell();
+    setFilter('archived');
+    expect(rowNames()).toEqual(['Gym']);
+
+    document.querySelector<HTMLButtonElement>('.habit-row .habit-action')!.click();
+
+    setFilter('active');
+    expect(rowNames()).toEqual(['Gym']);
+    expect(rowBadge(habitRow(0))).toBe('3');
+  });
+
+  it('shows 0 for a restored habit whose history ends before yesterday', () => {
+    seedHabit({ archived: true, completions: [addDays(todayLocalDate(), -7)] });
+    bootShell();
+    setFilter('archived');
+
+    document.querySelector<HTMLButtonElement>('.habit-row .habit-action')!.click();
+
+    setFilter('active');
+    expect(rowNames()).toEqual(['Gym']);
+    expect(rowBadge(habitRow(0))).toBe('0');
   });
 });
