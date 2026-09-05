@@ -1,7 +1,7 @@
 # Epic lfstJmm: Row UI Parity — Done Toggle, Streak Caption & Help Hint
 
 **Phase:** 3 — Frontend
-**Status:** Implemented — 2026-09-05
+**Status:** Complete — 2026-09-05
 **Dependencies:** Epic m1i25n4 (Daily Check-in & Streaks — checkbox wiring, store toggle, streak engine), Epic NZK8kqE (PeakFlames Design System — vendored token CSS, `.pf-*` classes)
 
 > **Brand:** Use the project's brand guidelines skill for the check-in button treatments, streak caption typography, and help-hint styling if one is configured. This repo vendors the PeakFlames Design System token CSS under `src/styles/peakflames/` — use it; do not introduce a UI framework.
