@@ -285,8 +285,8 @@ function setFilter(value: 'all' | 'active' | 'archived'): void {
 // TOR-02-XOoULU3 (UI level)
 // Given the Active view is open,
 // When the user types "Read 20 minutes" into the "Add habit" input and clicks "Add",
-// Then a new row appears showing the name, a streak badge of 0, an unchecked
-// "Done today" checkbox, and an "Archive" action — and the input is cleared.
+// Then a new row appears showing the name, a streak badge of 0, an unpressed
+// "Done today" button, and an "Archive" action — and the input is cleared.
 describe('habit list: add flow', () => {
   beforeEach(() => {
     localStorage.clear();
@@ -303,10 +303,11 @@ describe('habit list: add flow', () => {
 
     expect(rowNames()).toEqual(['Read 20 minutes']);
     const row = document.querySelector('.habit-row')!;
-    const badge = row.querySelector<HTMLElement>('.streak-badge')!;
+    const badge = row.querySelector<HTMLElement>('.streak-badge .streak-number')!;
     expect(badge.textContent).toBe('0');
-    const checkbox = row.querySelector<HTMLInputElement>('.habit-done')!;
-    expect(checkbox.checked).toBe(false);
+    const doneToggle = row.querySelector<HTMLButtonElement>('.habit-done-btn')!;
+    expect(doneToggle.getAttribute('aria-pressed')).toBe('false');
+    expect(doneToggle.textContent).toBe('Done today');
     const action = row.querySelector<HTMLButtonElement>('.habit-action')!;
     expect(action.textContent).toBe('Archive');
     expect(document.querySelector<HTMLInputElement>('#habit-name')!.value).toBe('');
@@ -464,11 +465,11 @@ function habitRow(index = 0): HTMLElement {
 }
 
 function rowBadge(row: HTMLElement): string {
-  return row.querySelector<HTMLElement>('.streak-badge')!.textContent ?? '';
+  return row.querySelector<HTMLElement>('.streak-badge .streak-number')!.textContent ?? '';
 }
 
-function rowCheckbox(row: HTMLElement): HTMLInputElement {
-  return row.querySelector<HTMLInputElement>('.habit-done')!;
+function rowDoneToggle(row: HTMLElement): HTMLButtonElement {
+  return row.querySelector<HTMLButtonElement>('.habit-done-btn')!;
 }
 
 function storedCompletions(id = 'gym-1'): string[] {
@@ -505,7 +506,9 @@ describe('habit list: streak badge rendering', () => {
     const badges = [...document.querySelectorAll<HTMLElement>('.streak-badge')];
     expect(badges.length).toBe(2);
     for (const badge of badges) {
-      expect(badge.textContent).toMatch(/^\d+$/);
+      expect(badge.querySelector<HTMLElement>('.streak-number')!.textContent).toMatch(
+        /^\d+$/,
+      );
     }
   });
 
@@ -553,7 +556,7 @@ describe('habit list: streak badge rendering', () => {
     bootShell();
 
     expect(rowBadge(habitRow(0))).toBe('3');
-    expect(rowCheckbox(habitRow(0)).checked).toBe(false);
+    expect(rowDoneToggle(habitRow(0)).getAttribute('aria-pressed')).toBe('false');
   });
 
   // TOR-04-Dzlhzul (UI render level)
@@ -582,31 +585,34 @@ describe('habit list: done-today toggle', () => {
     vi.restoreAllMocks();
   });
 
-  it('checking "Done today" records today, persists, and survives a reload', () => {
+  it('clicking "Done today" records today, persists, and survives a reload', () => {
     seedHabit();
     bootShell();
-    const checkbox = rowCheckbox(habitRow(0));
-    expect(checkbox.checked).toBe(false);
+    expect(rowDoneToggle(habitRow(0)).getAttribute('aria-pressed')).toBe('false');
+    expect(rowDoneToggle(habitRow(0)).textContent).toBe('Done today');
 
-    checkbox.click();
+    rowDoneToggle(habitRow(0)).click();
 
-    expect(rowCheckbox(habitRow(0)).checked).toBe(true);
+    expect(rowDoneToggle(habitRow(0)).getAttribute('aria-pressed')).toBe('true');
+    expect(rowDoneToggle(habitRow(0)).textContent).toBe('Done ✓');
     const today = todayLocalDate();
     expect(storedCompletions().filter((d) => d === today)).toHaveLength(1);
 
     bootShell(); // simulate reload: fresh DOM, same storage
-    expect(rowCheckbox(habitRow(0)).checked).toBe(true);
+    expect(rowDoneToggle(habitRow(0)).getAttribute('aria-pressed')).toBe('true');
+    expect(rowDoneToggle(habitRow(0)).textContent).toBe('Done ✓');
   });
 
-  it('unchecking removes today and recomputes the badge to the yesterday-anchored streak', () => {
+  it('clicking the done toggle again removes today and recomputes the badge to the yesterday-anchored streak', () => {
     const today = todayLocalDate();
     seedHabit({ completions: [addDays(today, -1), today] });
     bootShell();
     expect(rowBadge(habitRow(0))).toBe('2');
 
-    rowCheckbox(habitRow(0)).click();
+    rowDoneToggle(habitRow(0)).click();
 
-    expect(rowCheckbox(habitRow(0)).checked).toBe(false);
+    expect(rowDoneToggle(habitRow(0)).getAttribute('aria-pressed')).toBe('false');
+    expect(rowDoneToggle(habitRow(0)).textContent).toBe('Done today');
     expect(storedCompletions()).toEqual([addDays(today, -1)]);
     expect(rowBadge(habitRow(0))).toBe('1');
   });
@@ -615,10 +621,10 @@ describe('habit list: done-today toggle', () => {
     seedHabit();
     bootShell();
 
-    rowCheckbox(habitRow(0)).click();
+    rowDoneToggle(habitRow(0)).click();
     bootShell(); // reload
-    rowCheckbox(habitRow(0)).click(); // undo
-    rowCheckbox(habitRow(0)).click(); // record again
+    rowDoneToggle(habitRow(0)).click(); // undo
+    rowDoneToggle(habitRow(0)).click(); // record again
 
     const today = todayLocalDate();
     expect(storedCompletions().filter((d) => d === today)).toHaveLength(1);
@@ -627,7 +633,7 @@ describe('habit list: done-today toggle', () => {
   // TOR-04-Ft8iQbI (UI level)
   // Given a habit whose streak badge reads 0 because its last completion is
   // stale,
-  // When the user checks "Done today" on that row,
+  // When the user clicks "Done today" on that row,
   // Then the badge changes to 1 in the already-rendered page, with no reload.
   it('updates the streak badge immediately on toggle, without a reload', () => {
     seedHabit({ completions: [addDays(todayLocalDate(), -5)] });
@@ -635,7 +641,7 @@ describe('habit list: done-today toggle', () => {
     expect(rowBadge(habitRow(0))).toBe('0');
     const listEl = document.querySelector('#habit-list')!;
 
-    rowCheckbox(habitRow(0)).click();
+    rowDoneToggle(habitRow(0)).click();
 
     // Same rendered page: the list element identity is unchanged (no reload,
     // no re-boot) and the badge already shows 1.
@@ -670,10 +676,10 @@ describe('habit list: done-today toggle', () => {
     );
     bootShell();
 
-    rowCheckbox(habitRow(0)).click();
+    rowDoneToggle(habitRow(0)).click();
 
-    expect(rowCheckbox(habitRow(0)).checked).toBe(true);
-    expect(rowCheckbox(habitRow(1)).checked).toBe(false);
+    expect(rowDoneToggle(habitRow(0)).getAttribute('aria-pressed')).toBe('true');
+    expect(rowDoneToggle(habitRow(1)).getAttribute('aria-pressed')).toBe('false');
     expect(storedCompletions('a-1')).toEqual([todayLocalDate()]);
     expect(storedCompletions('a-2')).toEqual([]);
   });
@@ -839,9 +845,10 @@ describe('per-filter empty states', () => {
   it('Active with no habits at all: "No habits yet. Add your first habit above."', () => {
     bootShell();
 
-    const list = document.querySelector('#habit-list')!;
-    expect(list.textContent).toBe('No habits yet. Add your first habit above.');
-    expect(document.querySelector('.empty-state')).not.toBeNull();
+    // Epic lfstJmm: the Active view also carries the streak-rule help hint
+    // above the list region, so the empty-state element is the exact scope.
+    const empty = document.querySelector<HTMLElement>('.empty-state')!;
+    expect(empty.textContent).toBe('No habits yet. Add your first habit above.');
   });
 
   it('Active with only archived habits: "No active habits."', () => {
@@ -854,7 +861,7 @@ describe('per-filter empty states', () => {
     );
     bootShell();
 
-    expect(document.querySelector('#habit-list')?.textContent).toBe(
+    expect(document.querySelector<HTMLElement>('.empty-state')?.textContent).toBe(
       'No active habits.',
     );
   });
