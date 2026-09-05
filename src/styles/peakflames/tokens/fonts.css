@@ -1,0 +1,6 @@
+/* PeakFlames webfonts — served from Google Fonts.
+   SUBSTITUTION NOTE: no font binaries were supplied with the brand assets, so the
+   three families below were chosen as the nearest match to the brand's character
+   (industrial display, engineering-grade body, terminal mono). Swap the @import for
+   local @font-face rules if licensed files become available. */
+@import url("https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap");

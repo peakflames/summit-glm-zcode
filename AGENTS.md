@@ -15,6 +15,7 @@ feature breadth.
 |-------|-----------|---------|
 | Language | TypeScript (strict) | All application code |
 | Build tool / dev server | Vite | Dev server, bundling, production build |
+| Styling | PeakFlames Design System token CSS (vendored, no UI framework) | Brand tokens + `.pf-*` component classes in `src/styles/peakflames/`; see `docs/architecture.md` §6 "Styling" |
 | App type | Client-only SPA | Runs entirely in the browser — no backend |
 | Persistence | `localStorage` | Habits and completion history |
 | Package manager | npm | Dependencies and scripts |
@@ -176,6 +177,10 @@ A successful build (compile) does NOT equal working code. The workflow MUST be:
   once its steps are all worked through.
 
 ## Reference Materials
+
+- PeakFlames Design System — vendored token CSS under `src/styles/peakflames/`
+  (byte-identical from the sibling `summit` repo's copy of design project
+  `11ea476f-926c-40ea-8d34-91522c12d907`; no DesignSync access from this environment)
 
 - peak-workflow plugin skills: `~/.zcode/cli/plugins/cache/peakflames-plugins/peak-workflow/1.5.1/skills/`
 - Vite documentation: https://vite.dev/

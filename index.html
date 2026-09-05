@@ -3,6 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <title>Summit</title>
   </head>
   <body>
@@ -16,11 +18,12 @@
           id="habit-name"
           name="habit-name"
           type="text"
+          class="pf-input"
           placeholder="Add habit"
           aria-label="Habit name"
           autocomplete="off"
         />
-        <button id="add-habit" type="button">Add</button>
+        <button id="add-habit" type="button" class="pf-btn pf-btn--primary pf-btn--md">Add</button>
       </section>
 
       <section class="error-region" id="error-region" aria-label="Messages"></section>

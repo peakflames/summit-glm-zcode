@@ -1,0 +1,46 @@
+/* Semantic aliases. PeakFlames is dark-first: :root IS the dark theme.
+   [data-theme="light"] is the secondary "cold forge" surface for docs/print. */
+:root{
+  --bg-canvas:var(--obsidian-1000);
+  --bg-raised:var(--obsidian-900);
+  --bg-sunken:var(--obsidian-950);
+  --surface-card:var(--obsidian-900);
+  --surface-card-hover:var(--obsidian-800);
+  --surface-inset:rgba(6,17,27,.6);
+  --surface-overlay:rgba(6,17,27,.82);
+
+  --text-heading:var(--ash-100);
+  --text-body-color:var(--ash-400);
+  --text-muted:var(--ash-500);
+  --text-inverse:var(--obsidian-1000);
+  --text-accent:var(--amber-500);
+  --text-link:var(--flame-300);
+  --text-link-hover:var(--amber-500);
+
+  --border-subtle:rgba(235,237,212,.10);
+  --border-strong:rgba(235,237,212,.20);
+  --border-accent:var(--flame-500);
+
+  --accent:var(--flame-500);
+  --accent-hover:var(--flame-300);
+  --accent-press:var(--ember-700);
+  --accent-on:var(--ash-50);
+  --accent-soft:rgba(225,64,13,.14);
+
+  --status-success:var(--forge-green-500); --status-success-bg:var(--forge-green-900);
+  --status-info:var(--steel-500); --status-info-bg:var(--steel-900);
+  --status-warning:var(--amber-500); --status-warning-bg:rgba(249,199,115,.14);
+  --status-danger:var(--ember-600); --status-danger-bg:rgba(191,12,4,.16);
+
+  --control-height-sm:32px; --control-height-md:40px; --control-height-lg:48px;
+}
+[data-theme="light"]{
+  --bg-canvas:var(--ash-100); --bg-raised:#FFFFFF; --bg-sunken:var(--ash-200);
+  --surface-card:#FFFFFF; --surface-card-hover:var(--ash-100);
+  --surface-inset:rgba(6,17,27,.04); --surface-overlay:rgba(246,243,231,.85);
+  --text-heading:var(--obsidian-1000); --text-body-color:var(--obsidian-700);
+  --text-muted:var(--ash-600); --text-inverse:var(--ash-50); --text-accent:var(--ember-700);
+  --text-link:var(--ember-700); --text-link-hover:var(--flame-500);
+  --border-subtle:rgba(6,17,27,.10); --border-strong:rgba(6,17,27,.22);
+  --ring-focus:0 0 0 2px #FFFFFF,0 0 0 4px var(--flame-500);
+}

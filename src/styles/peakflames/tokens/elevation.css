@@ -1,0 +1,17 @@
+/* Two elevation systems: neutral depth (shadow) and heat (glow). */
+:root{
+  --shadow-sm:0 1px 2px rgba(3,8,13,.5);
+  --shadow-md:0 4px 12px -2px rgba(3,8,13,.6);
+  --shadow-lg:0 16px 40px -12px rgba(3,8,13,.7);
+  --shadow-inset-top:inset 0 1px 0 rgba(251,248,194,.08);
+
+  --glow-sm:0 0 0 1px rgba(225,64,13,.35);
+  --glow-md:0 4px 24px -6px rgba(225,64,13,.45);
+  --glow-lg:0 8px 48px -8px rgba(225,64,13,.55);
+  --ring-focus:0 0 0 2px var(--obsidian-1000),0 0 0 4px var(--flame-500);
+
+  /* Signature background washes — heat rising from the bottom edge. */
+  --gradient-forge:radial-gradient(120% 90% at 50% 118%,rgba(225,64,13,.42) 0%,rgba(172,10,7,.18) 38%,rgba(6,17,27,0) 72%); /* @kind other */
+  --gradient-ember-bar:linear-gradient(90deg,var(--ember-700) 0%,var(--flame-500) 52%,var(--amber-500) 100%);
+  --gradient-scrim:linear-gradient(180deg,rgba(6,17,27,0) 0%,rgba(6,17,27,.92) 78%); /* @kind other */
+}

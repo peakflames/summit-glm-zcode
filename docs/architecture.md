@@ -3,8 +3,9 @@
 > Refreshed to the as-built state by `/peak-workflow:refresh-docs` after Epics tVQOvBV
 > (Project Scaffold & App Shell), C1R8qkJ (Persistence Store & Recovery), AQNWtiB
 > (Habit Management UI), m1i25n4 (Daily Check-in & Streaks — all completed 2026-09-04),
-> and XDc5Tpp (Filtering, Views & Offline Verification — completed 2026-09-05). Re-run
-> that command after further epics to keep this document aligned with the code.
+> XDc5Tpp (Filtering, Views & Offline Verification — completed 2026-09-05), and NZK8kqE
+> (PeakFlames Design System — completed 2026-09-04). Re-run that command after further
+> epics to keep this document aligned with the code.
 
 ---
 
@@ -26,6 +27,7 @@ hosting of the Vite build output. It serves as the public reference example for 
 | Build tool / dev server | Vite | ^8.2.2 (installed 8.2.2) | Dev server, bundling, production build |
 | App type | Client-only SPA | — | Runs entirely in the browser — no backend |
 | Persistence | `localStorage` | — | Habits and completion history |
+| Styling | PeakFlames Design System token CSS (vendored, no UI framework) | — | Brand tokens (obsidian canvas, flame/ember/amber accent ramp, Archivo / IBM Plex Sans / JetBrains Mono) and `.pf-*` component classes under `src/styles/peakflames/`; see §6 "Styling" |
 | Package manager | npm | — | Dependencies and scripts |
 | Test runner | Vitest + happy-dom | ^5.0.0 / ^20.14.0 | Unit tests in a DOM-simulating environment (`npm run test`) |
 | Linter | ESLint + typescript-eslint (flat config) | ^9.9.0 / ^8.5.0 | Static analysis (`npm run lint`) |
@@ -60,7 +62,9 @@ N/A — no backend. Application code is organized as ES modules under `src/`:
 src/
 ├── main.ts              Boot sequence (entry point)
 ├── app.ts               Shell render + wiring (filter, list, boot load / recovery)
-├── styles.css           Shell, habit list/form, and banner styling
+├── styles.css           Summit layout on top of the vendored token layer
+├── styles/peakflames/   Vendored PeakFlames Design System (styles.css + tokens/ —
+│                        11 byte-identical token CSS files; see §6 "Styling")
 ├── vite-env.d.ts        Ambient declaration for __APP_VERSION__
 ├── ui/
 │   ├── error-banner.ts  Recovery banner + inline errors (role="alert")
@@ -77,7 +81,8 @@ src/
     └── storage.ts       Full store: loadState / saveState / updateState
 ```
 
-Co-located `*.test.ts` files (11 files, 99 tests) mirror the TOR Gherkin from
+Co-located `*.test.ts` files (12 files, 102 tests — including the Epic NZK8kqE
+`src/ui/design-system.test.ts` design-system contract tests) mirror the TOR Gherkin from
 `docs/requirements/`.
 
 ---
@@ -120,6 +125,40 @@ There is no router. The filter bar and list section re-render from an in-memory 
 mirror on every mutation and filter change: successful store actions update the mirror
 and re-render, and a filter-segment click re-renders from the newly selected filter
 value (the selected segment is derived per render, never patched in place).
+
+### Styling: PeakFlames Design System token layer (Epic NZK8kqE)
+
+The visual layer is the vendored **PeakFlames Design System** — 11 CSS files copied
+byte-identical into `src/styles/peakflames/` (`styles.css` index + `tokens/` for fonts,
+colors, typography, spacing, radius, elevation, motion, semantic, base, components;
+source: the sibling `summit` repo's verified copy of the design project — no DesignSync
+access from this environment). `src/styles.css` imports that layer first and keeps only
+Summit-specific layout on top: the old `:root` font/color/background declarations and
+every light-palette hex value are gone — the token layer owns the dark-first obsidian
+canvas (`--bg-canvas`), the flame/ember/amber accent ramp, and the brand type ramp
+(Archivo display / IBM Plex Sans body / JetBrains Mono, fetched from Google Fonts via a
+`tokens/fonts.css` `@import` plus `preconnect` links in `index.html`, with system-font
+fallback stacks in the `--font-*` variables when the CDN is unreachable).
+
+Adoption rules baked into the code:
+
+- **Strictly additive classes.** Every pre-existing class name stays on its element;
+  `.pf-*` classes are added alongside (`habit-row pf-card`, `filter-segment pf-tab`,
+  `habit-action pf-btn pf-btn--secondary`, `form-error pf-error`, `empty-state pf-hint`,
+  `pf-alert` on the error banners). The static `#habit-name` input carries `pf-input`
+  and the `#add-habit` button carries `pf-btn pf-btn--primary pf-btn--md` in
+  `index.html`. The unit tests and the 37 pre-existing TORs pass unmodified on this
+  contract.
+- **One hot element per view (TOR-07-EXjNoVz).** The Add button is the sole
+  `pf-btn--primary` (flame-accent) control; every other control is secondary, ghost, or
+  a plain checkbox.
+- **Filter selection (TOR-07-o4sphQD).** The ember gradient treatment is the
+  `pf-tab--active::after` bar; `filter-bar.ts` toggles `pf-tab--active` together with
+  the original `is-selected`, whose own CSS keeps only a neutral emphasis.
+- **Streak prominence (TOR-07-pa7ak24).** `.streak-badge` is amber
+  (`--text-accent`), display-face, and heavier/larger than `.habit-name`.
+- **Focus rings (TOR-07-c3lKxoV).** The vendored `tokens/base.css` sets a global
+  `:focus-visible` ring (`--ring-focus`) covering every interactive control.
 
 ### Filter bar and views (Epic XDc5Tpp)
 
