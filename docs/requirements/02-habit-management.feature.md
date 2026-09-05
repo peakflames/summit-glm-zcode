@@ -11,7 +11,7 @@ Feature: 2.0 Habit Management
 Scenario: [TOR-02-XOoULU3] The application shall add a new habit by name through the "Add habit" input and Add button, showing it immediately in the habit list
     Given the Active view is open
     When the user types "Read 20 minutes" into the "Add habit" input and clicks "Add"
-    Then a new row appears in the list showing the name "Read 20 minutes", a streak badge of 0, an unchecked "Done today" checkbox, and an "Archive" action
+    Then a new row appears in the list showing the name "Read 20 minutes", a streak badge of 0, an unchecked "Done today" button, and an "Archive" action
     And the "Add habit" input is cleared
 
 Scenario: [TOR-02-w9nrh1o] The application shall submit the "Add habit" input when the user presses Enter, behaving identically to clicking Add

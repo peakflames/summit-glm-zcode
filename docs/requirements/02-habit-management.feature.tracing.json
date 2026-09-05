@@ -1,7 +1,7 @@
 {
   "feature_id": "02",
   "feature_file": "02-habit-management.feature.md",
-  "generated": "2026-09-04",
+  "generated": "2026-09-05",
   "generator": "haiku-sub-agent via /peak-workflow:capture-requirements",
   "requirements": [
     {
@@ -11,14 +11,14 @@
         "vision": [
           {
             "section": "§5 — Goals & Success Criteria (MVP)",
-            "paraphrase": "Goal G1: a new habit appears in the list immediately after being added."
+            "paraphrase": "Serves goal G1 — a habit the user adds must surface in the list the moment it is submitted, not after a refresh or navigation."
           }
         ],
         "conops": [
           {
             "scenario": "S1",
             "step": 5,
-            "paraphrase": "Submitting the add form produces a full row — name, streak 0, checkbox, Archive action — at once."
+            "paraphrase": "Submitting the add form renders the complete row in one step — habit name, a zeroed streak badge, the check-in control in its unchecked \"Done today\" button state, and the Archive action."
           }
         ]
       }

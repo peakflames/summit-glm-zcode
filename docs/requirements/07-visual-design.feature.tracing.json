@@ -1,7 +1,7 @@
 {
   "feature_id": "07",
   "feature_file": "07-visual-design.feature.md",
-  "generated": "2026-09-04",
+  "generated": "2026-09-05",
   "generator": "haiku-sub-agent via /peak-workflow:capture-requirements",
   "requirements": [
     {
@@ -123,6 +123,25 @@
             "scenario": "§3 — Proposed System (streak badge as the row's motivating number)",
             "step": null,
             "paraphrase": "The to-be system puts a live streak badge at the heart of each row because the motivating count is what brings the user back tomorrow, so it should carry more visual weight than the habit's name."
+          }
+        ]
+      }
+    },
+    {
+      "id": "TOR-07-OgGR571",
+      "title": "The web application shall render the check-in control as a toggle button whose undone state reads \"Done today\" in a neutral outlined treatment and whose done state reads \"Done ✓\" in the design system's success green, with neither state carrying the flame accent",
+      "traces_to": {
+        "vision": [
+          {
+            "section": "§9 — Design Direction (check-in-control bullet, amended 2026-09-05)",
+            "paraphrase": "The amended design direction upgrades the check-in control from a bare checkbox to a toggle button whose two states — a neutral outlined \"Done today\" and a success-green \"Done ✓\" — both stay clear of the flame accent, so the Add button keeps its position as the view's single hot element."
+          }
+        ],
+        "conops": [
+          {
+            "scenario": "§3 — Proposed System (closing visual paragraph, Done-toggle sentences)",
+            "step": null,
+            "paraphrase": "The to-be visual spec deliberately withholds the flame accent from the Done toggle: undone it presents as a neutral outlined \"Done today\" button, done it flips to \"Done ✓\" in the design system's success green — a two-state treatment this TOR pins as checkable rendering behavior."
           }
         ]
       }
