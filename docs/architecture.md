@@ -2,9 +2,9 @@
 
 > Refreshed to the as-built state by `/peak-workflow:refresh-docs` after Epics tVQOvBV
 > (Project Scaffold & App Shell), C1R8qkJ (Persistence Store & Recovery), AQNWtiB
-> (Habit Management UI), and m1i25n4 (Daily Check-in & Streaks — all completed
-> 2026-09-04). Re-run that command after further epics to keep this document aligned
-> with the code.
+> (Habit Management UI), m1i25n4 (Daily Check-in & Streaks — all completed 2026-09-04),
+> and XDc5Tpp (Filtering, Views & Offline Verification — completed 2026-09-05). Re-run
+> that command after further epics to keep this document aligned with the code.
 
 ---
 
@@ -65,7 +65,9 @@ src/
 ├── ui/
 │   ├── error-banner.ts  Recovery banner + inline errors (role="alert")
 │   ├── habit-form.ts    Add-habit form: submit paths + inline validation errors
-│   └── habit-row.ts     Habit row rendering (name, streak badge, checkbox, action)
+│   ├── filter-bar.ts    Three-segment All/Active/Archived radiogroup (filter control)
+│   ├── habit-list.ts    Per-view row filtering + per-filter empty states
+│   └── habit-row.ts     Habit row rendering (checkbox, name, archived tag, badge, action)
 └── lib/
     ├── version.ts       APP_NAME / APP_VERSION (build-time define)
     ├── logger.ts        [LEVEL] message logger (DEBUG/INFO/WARN/ERROR)
@@ -75,7 +77,7 @@ src/
     └── storage.ts       Full store: loadState / saveState / updateState
 ```
 
-Co-located `*.test.ts` files (9 files, 77 tests) mirror the TOR Gherkin from
+Co-located `*.test.ts` files (11 files, 99 tests) mirror the TOR Gherkin from
 `docs/requirements/`.
 
 ---
@@ -102,24 +104,57 @@ markup once at boot:
   missing it logs an error and throws — fail-fast rather than a silent partial render.
   (`initHabitForm()` in `src/ui/habit-form.ts` performs the same fail-fast check for the
   form's own anchors: `#habit-name`, `#add-habit`, and the `.add-habit` root.)
-- Renders the All/Active/Archived filter `<select>` (`#habit-filter`, with an
-  `aria-label`) into `#filter`.
-- Loads state via `loadState()`. On a valid load it renders the list area: a per-filter
-  empty state ("No habits yet" for All/Active, "No archived habits" for Archived) when
-  nothing matches the current filter, otherwise one habit row per visible habit via
-  `renderHabitRow()`. On an unreadable load it renders the recovery banner into
-  `#error-region` instead — unreadable data is never silently treated as an empty state.
+- Renders the All/Active/Archived filter control via `renderFilterBar()`
+  (`src/ui/filter-bar.ts`) into `#filter` — a `role="radiogroup"` of three segment
+  buttons (see the Filter bar and views section below).
+- Loads state via `loadState()`. On a valid load it renders the list area via
+  `renderHabitList()`: a per-filter empty state (see the message table in the Filter bar
+  and views section) when nothing matches the current filter, otherwise one habit row
+  per visible habit via `renderHabitRow()`. On an unreadable load it renders the
+  recovery banner into `#error-region` instead — unreadable data is never silently
+  treated as an empty state.
 - Wires the add-habit form via `initHabitForm()` (see below) and renders the version
   footer (`Summit vX.Y.Z`) into `#footer`.
 
-There is no router. The list section re-renders from an in-memory state mirror on every
-mutation and filter change: successful store actions update the mirror and re-render, and
-the filter `change` event re-renders from the selected filter value.
+There is no router. The filter bar and list section re-render from an in-memory state
+mirror on every mutation and filter change: successful store actions update the mirror
+and re-render, and a filter-segment click re-renders from the newly selected filter
+value (the selected segment is derived per render, never patched in place).
 
-### Habit rows (Epic AQNWtiB, wired in Epic m1i25n4)
+### Filter bar and views (Epic XDc5Tpp)
+
+The filter control (`src/ui/filter-bar.ts`) is a `role="radiogroup"` of three segment
+buttons labeled **All / Active / Archived** (each `role="radio"`, `aria-checked` on the
+selected one) rather than a dropdown, so the current view is always visible and
+switching views is one click. The selected segment carries `.is-selected` and
+`tabIndex` 0; selection is derived on every render from the app's `filter` state
+(`src/app.ts`, defaulting to `'active'` — TOR-05-PrNhHoE), never patched in place.
+
+Row contents come from `visibleHabits(state, filter)` in `src/ui/habit-list.ts`
+(TOR-05-sAMxFFs, TOR-05-qD4GGzl): Active shows non-archived habits, Archived shows
+archived habits, All shows every habit. Archived rows carry a visible "Archived" tag
+(`.archived-tag`, rendered by `src/ui/habit-row.ts`) and offer **Restore** instead of
+**Archive**, which visually distinguishes them in the shared All view. When a view has
+no rows, `emptyStateMessage()` renders the TOR-05-0maiBlC message instead of an empty
+list area:
+
+| App state | Filter | Message |
+|-----------|--------|---------|
+| no habits at all | Active / All | "No habits yet. Add your first habit above." |
+| only archived habits | Active | "No active habits." |
+| no archived habits | Archived | "No archived habits." |
+
+Offline capability (TOR-01-0d73l6K) is architectural: the app makes no network calls at
+all — there is no `fetch`/`XMLHttpRequest`/WebSocket anywhere in `src/`, and all
+capability (add, check-in, archive, restore, filter) runs locally against
+`localStorage`, verified live with a flat `performance` resource timeline across a full
+action session.
+
+### Habit rows (Epic AQNWtiB, wired in Epic m1i25n4; archived tag in Epic XDc5Tpp)
 
 Each row (`.habit-row`, keyed by `data-habit-id`) carries a "Done today" checkbox
-(`aria-label` per habit), the habit name (`.habit-name`), a streak badge
+(`aria-label` per habit), the habit name (`.habit-name`), an "Archived" tag
+(`.archived-tag`) when the habit is archived, a streak badge
 (`.streak-badge`, with a `Current streak: N` aria-label), and one action button —
 **Archive** for active habits, **Restore** for archived ones. The row is a pure function
 of the habit (`src/ui/habit-row.ts`): the checkbox reflects

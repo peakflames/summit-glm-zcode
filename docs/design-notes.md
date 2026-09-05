@@ -1,8 +1,9 @@
 # Summit — Design Decision Notes
 
 > Refreshed by `/peak-workflow:refresh-docs` after Epics tVQOvBV (Project Scaffold & App
-> Shell), C1R8qkJ (Persistence Store & Recovery), AQNWtiB (Habit Management UI), and
-> m1i25n4 (Daily Check-in & Streaks — all completed 2026-09-04). Sections 1–5 are the
+> Shell), C1R8qkJ (Persistence Store & Recovery), AQNWtiB (Habit Management UI),
+> m1i25n4 (Daily Check-in & Streaks — all completed 2026-09-04), and XDc5Tpp
+> (Filtering, Views & Offline Verification — completed 2026-09-05). Sections 1–5 are the
 > original planning decisions from `/peak-workflow:setup` (verified still accurate);
 > section 6+ are as-built decisions consolidated from the epics' session handoffs.
 
@@ -129,7 +130,8 @@ would be pure overhead.
 ## 12. Tests mirror the TOR Gherkin (Epic tVQOvBV)
 
 **Decision:** The vitest suites (28 tests across 6 files at Epic tVQOvBV's close; 49
-tests across 8 files after Epic AQNWtiB; 77 tests across 9 files after Epic m1i25n4,
+tests across 8 files after Epic AQNWtiB; 77 tests across 9 files after Epic m1i25n4;
+99 tests across 11 files after Epic XDc5Tpp,
 co-located with the code under `src/`) are
 written to exercise each TOR's Given/When/Then from
 `docs/requirements/*.feature.md`, and the handoff's TOR Coverage table maps every TOR ID to
@@ -148,7 +150,8 @@ write when the stored document is unreadable (`reason: 'unreadable-storage'`), s
 rewrites a document it does not understand; recovery ("Start fresh") has to happen first.
 As built, the AQNWtiB habit actions (`addHabit` / `archiveHabit` / `restoreHabit`, see
 decisions 16–17) and the m1i25n4 `toggleToday` (decision 22) route through it; the
-remaining epic (XDc5Tpp) must wire its UI controls through it.
+XDc5Tpp UI (filter switching, row actions) reuses the same wired path — all mutations
+flow through `updateState`.
 
 **Rationale:** A single write-through choke point makes "is the data saved?" trivially
 answerable, eliminates lost-update classes of bugs, and gives the unreadable-data invariant
@@ -243,14 +246,15 @@ those selectors and mis-announce to screen readers. Lazy creation keeps the stat
 free of live-region markup while errors still get announced when they actually appear
 (TOR-02-flxKIoM, TOR-02-lMWubKc).
 
-## 20. Minimal filter behavior (Epic AQNWtiB); the unwired-mounts deferral is closed (m1i25n4)
+## 20. Minimal filter behavior (Epic AQNWtiB); superseded by the full filter epic (XDc5Tpp)
 
-**Decision:** The All/Active/Archived filter (`#habit-filter` + `visibleHabits()` in
-`src/app.ts`) is minimal row visibility with per-filter empty-state messages ("No habits
-yet" / "No archived habits"). In AQNWtiB the "Done today" checkbox rendered as an
-unchecked, unwired mount and the streak badge rendered a hardcoded `0`
-(`src/ui/habit-row.ts`) — that deferral is now closed: both are wired and
-history-derived as of Epic m1i25n4 (decisions 21–23).
+**Decision:** At AQNWtiB the All/Active/Archived filter was minimal row visibility with
+per-filter empty-state messages, hosted by a scaffold `<select>`; in AQNWtiB the "Done
+today" checkbox rendered as an unchecked, unwired mount and the streak badge rendered a
+hardcoded `0` (`src/ui/habit-row.ts`). Both deferrals are closed: the checkbox/badge
+were wired and made history-derived in Epic m1i25n4 (decisions 21–23), and the full
+filtering/views epic shipped as XDc5Tpp (decision 26), replacing the select with the
+three-segment control.
 
 **Rationale:** Phase decomposition, same precedent as C1R8qkJ's row-rendering deferral:
 the full filtering/views epic is XDc5Tpp. The minimal filter exists so the Archived view
@@ -325,7 +329,61 @@ requires. Asserting the local key under fake timers tests the invariant itself.
 
 ---
 
-## 25. Known Issues and Deferred Work
+## 25. Three-segment radiogroup with derived selection, not a dropdown (Epic XDc5Tpp)
+
+**Decision:** The All/Active/Archived filter is a `role="radiogroup"` of three segment
+buttons (`src/ui/filter-bar.ts`), each `role="radio"` with `aria-checked` and
+`.is-selected` on the selected one, replacing the AQNWtiB scaffold `<select>`. The app
+holds `filter` state defaulting to `'active'` (TOR-05-PrNhHoE); the selected segment is
+re-derived from that state on every render — never patched in place — and a segment
+click re-renders the bar and list together (TOR-05-GjGNESQ).
+
+**Rationale:** With the current view always visible and one click to switch, the daily
+list stays uncluttered without hiding where you are. Deriving selection per render keeps
+the bar a pure function of state like every other rendered region — there is no
+selection-mutation code path to drift — and radiogroup semantics give assistive tech the
+"exactly one of three selected" contract for free.
+
+## 26. Per-view rows and empty states as a pure message table (Epic XDc5Tpp)
+
+**Decision:** Row visibility lives in `visibleHabits(state, filter)` and empty-state
+copy in `emptyStateMessage(state, filter)` (both in `src/ui/habit-list.ts`) — each a
+pure `switch` over the filter. The Active empty state distinguishes "nothing yet"
+("No habits yet. Add your first habit above.") from "everything is archived"
+("No active habits."), matching the TOR-05-0maiBlC message table verbatim. Archived
+rows carry a visible `.archived-tag` and offer Restore rather than Archive
+(`src/ui/habit-row.ts`), which visually distinguishes them in the shared All view
+(TOR-05-sAMxFFs, TOR-05-qD4GGzl).
+
+**Rationale:** A pure function of `(state, filter)` cannot render a row that doesn't
+belong to the view, and transcribing the requirement's message table directly into code
+makes the TOR test a verbatim transcription too. The "no habits yet" vs "no active
+habits" split is the difference between pointing the user at the add form and telling
+them their data is safe but filtered — one message for both cases would mislead one of
+the two states.
+
+## 27. Offline capability is architectural, verified by a flat resource timeline (Epic XDc5Tpp)
+
+**Decision:** TOR-01-0d73l6K (zero network requests, fully functional offline) holds by
+construction: no network API (`fetch`, `XMLHttpRequest`, WebSocket) exists anywhere in
+`src/`, and all actions run locally against `localStorage` through the canonical
+mutation path. Verification was an in-page simulation: a full live action session (add,
+check-in, archive, restore, filter) with the append-only `performance` resource timeline
+measured flat across it (15 → 15 entries in the implementer's session; 16 → 16 in the
+independent reviewer's), plus a reload asserting persisted state. A dev-server page
+cannot refetch its own shell with the network cut, so the substance — zero requests for
+the actions, full functionality, persistence after reload — was demonstrated rather than
+a literal network-off toggle.
+
+**Rationale:** For a client-only SPA, "offline" is not a mode the code enters but a
+property of what the code never does; a static no-network-APIs check plus a flat
+resource timeline is a stronger, repeatable signal than one manual DevTools session.
+The deviation is recorded in the epic handoff and judged no deviation in substance,
+mirroring the TOR-03-albP5kN precedent (decision 24).
+
+---
+
+## 28. Known Issues and Deferred Work
 
 - **Favicon 404 (non-blocking):** browsers auto-request `/favicon.ico` and the Vite dev
   server returns a 404, producing one console error per page load. No TOR requires an
@@ -338,9 +396,6 @@ requires. Asserting the local key under fake timers tests the invariant itself.
 - **Schema migrations:** not needed yet — `schemaVersion: 1` is the only version; an
   unknown version currently routes to the recovery banner ("Start fresh"). Migrations are
   future scope when a schema change first ships.
-- **Minimal filter behavior (Epic AQNWtiB):** row visibility per All/Active/Archived only;
-  the full filtering/views epic is XDc5Tpp. The remaining Phase-3 epic (XDc5Tpp) must
-  continue routing mutations through `updateState`.
 - **Hosting target:** the production artifact is static `dist/` output; hosting target
   (e.g., GitHub Pages) is TBD.
 - **No CI pipeline:** when one is added, configure it to run the quality gates on every
@@ -348,4 +403,7 @@ requires. Asserting the local key under fake timers tests the invariant itself.
 
 *(Closed in m1i25n4: the "unwired row mounts" item — the "Done today" checkbox and streak
 badge are wired, TOR-03/TOR-04 coverage is in place, and duplicate-row independence was
-re-verified at the interaction level, closing the AQNWtiB follow-up from decision 16.)*
+re-verified at the interaction level, closing the AQNWtiB follow-up from decision 16.
+Closed in XDc5Tpp: the "minimal filter behavior" item — the full filtering/views epic
+shipped the three-segment control, per-view rows with the archived tag, and the
+TOR-05-0maiBlC empty states, closing the AQNWtiB deferral from decision 20.)*
