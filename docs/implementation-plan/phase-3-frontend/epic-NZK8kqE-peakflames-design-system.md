@@ -1,7 +1,7 @@
 # Epic NZK8kqE: PeakFlames Design System
 
 **Phase:** 3 — Frontend
-**Status:** Implemented — 2026-09-04
+**Status:** Complete — 2026-09-04
 **Dependencies:** Epic AQNWtiB (Habit Management UI), Epic m1i25n4 (Daily Check-in & Streaks), Epic XDc5Tpp (Filtering, Views & Offline Verification) — this epic restyles the components those epics built and must not regress their behavior or DOM structure
 
 > **Brand:** Adopt the PeakFlames Design System (the shared PeakFlames brand language) — vendor its token CSS and apply its `.pf-*` component classes across the UI.
