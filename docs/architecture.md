@@ -1,9 +1,10 @@
 # Summit — Architecture Document
 
 > Refreshed to the as-built state by `/peak-workflow:refresh-docs` after Epics tVQOvBV
-> (Project Scaffold & App Shell), C1R8qkJ (Persistence Store & Recovery), and AQNWtiB
-> (Habit Management UI — all completed 2026-09-04). Re-run that command after further
-> epics to keep this document aligned with the code.
+> (Project Scaffold & App Shell), C1R8qkJ (Persistence Store & Recovery), AQNWtiB
+> (Habit Management UI), and m1i25n4 (Daily Check-in & Streaks — all completed
+> 2026-09-04). Re-run that command after further epics to keep this document aligned
+> with the code.
 
 ---
 
@@ -69,11 +70,12 @@ src/
     ├── version.ts       APP_NAME / APP_VERSION (build-time define)
     ├── logger.ts        [LEVEL] message logger (DEBUG/INFO/WARN/ERROR)
     ├── types.ts         Stored-document types (Habit, AppState)
-    ├── habits.ts        Store actions: addHabit / archiveHabit / restoreHabit
+    ├── habits.ts        Store actions: addHabit / archiveHabit / restoreHabit / toggleToday
+    ├── streaks.ts       Pure streak engine: localDateKey / todayLocalDate / addDays / currentStreak
     └── storage.ts       Full store: loadState / saveState / updateState
 ```
 
-Co-located `*.test.ts` files (8 files, 49 tests) mirror the TOR Gherkin from
+Co-located `*.test.ts` files (9 files, 77 tests) mirror the TOR Gherkin from
 `docs/requirements/`.
 
 ---
@@ -114,15 +116,28 @@ There is no router. The list section re-renders from an in-memory state mirror o
 mutation and filter change: successful store actions update the mirror and re-render, and
 the filter `change` event re-renders from the selected filter value.
 
-### Habit rows (Epic AQNWtiB)
+### Habit rows (Epic AQNWtiB, wired in Epic m1i25n4)
 
 Each row (`.habit-row`, keyed by `data-habit-id`) carries a "Done today" checkbox
 (`aria-label` per habit), the habit name (`.habit-name`), a streak badge
-(`.streak-badge`), and one action button — **Archive** for active habits, **Restore** for
-archived ones. The checkbox and the streak badge are deliberate unwired mounts in this
-epic: the check-in toggle engine and real streak computation land with epic m1i25n4, so
-the badge shows 0 — the correct value for every habit the UI can create (no completions
-are possible yet).
+(`.streak-badge`, with a `Current streak: N` aria-label), and one action button —
+**Archive** for active habits, **Restore** for archived ones. The row is a pure function
+of the habit (`src/ui/habit-row.ts`): the checkbox reflects
+`habit.completions.includes(todayLocalDate())` and fires the row's `onToggle` callback on
+change; the badge renders `currentStreak(habit.completions)` from the streak engine —
+every render (initial, post-toggle, post-restore) is derived from the stored history with
+no special cases.
+
+### Streak engine and local dates (Epic m1i25n4)
+
+`src/lib/streaks.ts` is a pure module — no DOM, no storage, no global clock read when
+`today` is passed explicitly. Completion history is keyed on the user's **local**
+calendar date: `localDateKey()` formats a `Date`'s local fields as `YYYY-MM-DD`
+(deliberately not `toISOString()`, which is UTC and would shift the day boundary for
+users far from UTC — TOR-03-albP5kN), `addDays()` does month/year-safe key arithmetic by
+parsing keys to local midnight, and `currentStreak(completions, today?)` implements the
+PV §6 rule: the streak is the count of consecutive completed local days ending today if
+today is completed, otherwise ending yesterday, otherwise 0.
 
 ### Add-habit form (Epic AQNWtiB)
 
@@ -179,8 +194,12 @@ All persistence goes through `src/lib/storage.ts`:
   `archiveHabit(id)` / `restoreHabit(id)` (flip the `archived` flag, `completions`
   untouched). Each returns a typed result: `{ ok: true, state, habit }` or
   `{ ok: false, reason }` with reasons `empty-name`, `name-too-long`, `unknown-habit`,
-  `quota-exceeded`, `unreadable-storage`. The check-in toggle will join this path with
-  epic m1i25n4.
+  `quota-exceeded`, `unreadable-storage`. `toggleToday(id)` (Epic m1i25n4) joins this
+  path: it computes `todayLocalDate()` once, then inside the `updateState` mutation
+  removes today's key from the habit's `completions` if present or appends it if not —
+  the membership check makes the toggle idempotent, so repeated toggles and reloads can
+  never duplicate an entry. Unknown ids return `unknown-habit`; storage refusals reuse
+  the same error reasons.
 
 ### Recovery & user-facing errors
 
@@ -196,7 +215,8 @@ Unreadable stored data is a first-class boot state, handled by `src/ui/error-ban
   ("Couldn't save your changes… Remove archived habits to free space." — TOR-01-yNjDWrJ).
 - `dismissBanner()` clears the message region.
 - **Mid-session save failures (Epic AQNWtiB):** a refused save from any habit action
-  (`addHabit` / `archiveHabit` / `restoreHabit`) routes to one handler in `src/app.ts`
+  (`addHabit` / `archiveHabit` / `restoreHabit` / `toggleToday`) routes to one handler in
+  `src/app.ts`
   (`handleSaveFailure`), which re-checks `loadState()`: an unreadable document gets the
   recovery banner (data became unreadable mid-session), otherwise the inline
   "storage is full" message renders. Form validation errors use their own lazily created

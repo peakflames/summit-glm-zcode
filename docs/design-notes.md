@@ -1,10 +1,10 @@
 # Summit — Design Decision Notes
 
 > Refreshed by `/peak-workflow:refresh-docs` after Epics tVQOvBV (Project Scaffold & App
-> Shell), C1R8qkJ (Persistence Store & Recovery), and AQNWtiB (Habit Management UI — all
-> completed 2026-09-04). Sections 1–5 are the original planning decisions from
-> `/peak-workflow:setup` (verified still accurate); section 6+ are as-built decisions
-> consolidated from the epics' session handoffs.
+> Shell), C1R8qkJ (Persistence Store & Recovery), AQNWtiB (Habit Management UI), and
+> m1i25n4 (Daily Check-in & Streaks — all completed 2026-09-04). Sections 1–5 are the
+> original planning decisions from `/peak-workflow:setup` (verified still accurate);
+> section 6+ are as-built decisions consolidated from the epics' session handoffs.
 
 ---
 
@@ -129,7 +129,8 @@ would be pure overhead.
 ## 12. Tests mirror the TOR Gherkin (Epic tVQOvBV)
 
 **Decision:** The vitest suites (28 tests across 6 files at Epic tVQOvBV's close; 49
-tests across 8 files after Epic AQNWtiB, co-located with the code under `src/`) are
+tests across 8 files after Epic AQNWtiB; 77 tests across 9 files after Epic m1i25n4,
+co-located with the code under `src/`) are
 written to exercise each TOR's Given/When/Then from
 `docs/requirements/*.feature.md`, and the handoff's TOR Coverage table maps every TOR ID to
 its test reference.
@@ -146,8 +147,8 @@ load → mutate → save immediately. There is no save button and no delay — w
 write when the stored document is unreadable (`reason: 'unreadable-storage'`), so v1 never
 rewrites a document it does not understand; recovery ("Start fresh") has to happen first.
 As built, the AQNWtiB habit actions (`addHabit` / `archiveHabit` / `restoreHabit`, see
-decisions 16–17) route through it; the remaining epics (m1i25n4, XDc5Tpp) must wire their
-UI controls through it.
+decisions 16–17) and the m1i25n4 `toggleToday` (decision 22) route through it; the
+remaining epic (XDc5Tpp) must wire its UI controls through it.
 
 **Rationale:** A single write-through choke point makes "is the data saved?" trivially
 answerable, eliminates lost-update classes of bugs, and gives the unreadable-data invariant
@@ -197,10 +198,10 @@ row.
 
 **Rationale:** Duplicates-as-independent-rows is a product decision recorded in the
 product vision (§6), so a uniqueness constraint would be an unrequested feature. The
-duplicate TOR (TOR-02-f9diV8o) verifies the *independence* of the rows, which at this
-stage is checked at the state level (`src/lib/habits.test.ts:81`) since no UI path in the
-epic can create a completion — the interaction-level re-check lands with the toggle in
-epic m1i25n4.
+duplicate TOR (TOR-02-f9diV8o) verifies the *independence* of the rows, checked at the
+state level (`src/lib/habits.test.ts:81`) — and the interaction-level re-check landed
+with the toggle in epic m1i25n4 and passed: duplicate rows stay independent when both
+are checked and unchecked (`src/app.test.ts:635`).
 
 ## 17. Habit store actions return a typed result; one mid-session save-failure handler (Epic AQNWtiB)
 
@@ -242,27 +243,94 @@ those selectors and mis-announce to screen readers. Lazy creation keeps the stat
 free of live-region markup while errors still get announced when they actually appear
 (TOR-02-flxKIoM, TOR-02-lMWubKc).
 
-## 20. Unwired mounts for the checkbox and streak badge; minimal filter behavior (Epic AQNWtiB)
+## 20. Minimal filter behavior (Epic AQNWtiB); the unwired-mounts deferral is closed (m1i25n4)
 
-**Decision:** The "Done today" checkbox renders as an unchecked, unwired mount and the
-streak badge renders a hardcoded `0` (`src/ui/habit-row.ts`); the All/Active/Archived
-filter (`#habit-filter` + `visibleHabits()` in `src/app.ts`) is minimal row visibility
-with per-filter empty-state messages ("No habits yet" / "No archived habits").
+**Decision:** The All/Active/Archived filter (`#habit-filter` + `visibleHabits()` in
+`src/app.ts`) is minimal row visibility with per-filter empty-state messages ("No habits
+yet" / "No archived habits"). In AQNWtiB the "Done today" checkbox rendered as an
+unchecked, unwired mount and the streak badge rendered a hardcoded `0`
+(`src/ui/habit-row.ts`) — that deferral is now closed: both are wired and
+history-derived as of Epic m1i25n4 (decisions 21–23).
 
 **Rationale:** Phase decomposition, same precedent as C1R8qkJ's row-rendering deferral:
-the check-in toggle engine, TOR-03 coverage, and the real streak computation are epic
-m1i25n4 scope, and the full filtering/views epic is XDc5Tpp. The minimal filter exists so
-the Archived view can host the restore flow (TOR-02-E0o3IbX). Badge value 0 is correct for
-every habit this epic can create — no UI path can produce a completion yet.
+the full filtering/views epic is XDc5Tpp. The minimal filter exists so the Archived view
+can host the restore flow (TOR-02-E0o3IbX). Deferring the check-in toggle let AQNWtiB
+ship an independently verifiable slice; badge value 0 was correct for every habit the UI
+could create at the time — no UI path could produce a completion yet.
 
 ---
 
-## 21. Known Issues and Deferred Work
+## 21. Pure streak engine with an injectable `today`; local-date keying, never UTC (Epic m1i25n4)
+
+**Decision:** `src/lib/streaks.ts` holds the normative PV §6 rule — the current streak is
+the count of consecutive completed local calendar days ending today if today is
+completed, otherwise ending yesterday, otherwise 0 — as a pure function
+`currentStreak(completions, today?)`. `today` is an optional parameter defaulting to
+`todayLocalDate()`, so every clause of the rule is unit-testable without DOM, storage, or
+a global clock read. Completion keys are formatted from the `Date`'s **local** fields
+(`localDateKey`), deliberately never `toISOString()`, which is UTC and would shift the
+day boundary for users far from UTC (TOR-03-albP5kN). `addDays()` parses keys to local
+midnight so month/year boundary rolls stay on the user's own calendar.
+
+**Rationale:** The streak rule is the app's core business logic, so it lives in a pure,
+dependency-free module that the rule table from the requirement file can be transcribed
+into verbatim (`src/lib/streaks.test.ts`). Local-field keying was confirmed live during
+verification: a check-in at local 2026-09-04 while the UTC instant was already
+2026-09-05 stored exactly `["2026-09-04"]`.
+
+## 22. `toggleToday` is idempotent by membership check inside the canonical mutation path (Epic m1i25n4)
+
+**Decision:** `toggleToday(id)` in `src/lib/habits.ts` computes `todayLocalDate()` once,
+then inside the `updateState` mutation removes today's key from the habit's
+`completions` if present, or appends it if not. The membership check — not a UI flag —
+makes the toggle idempotent: repeated toggles and reloads can never produce a duplicate
+entry (TOR-03-zr7VepE). It reuses the existing `HabitActionResult` error paths
+(`unknown-habit`, `quota-exceeded`, `unreadable-storage`) rather than introducing a new
+result type.
+
+**Rationale:** Idempotence at the data layer survives any UI bug, double-fired event, or
+stale render; enforcing it inside the mutation means the state in storage can never hold
+two copies of a date. Reusing the typed result keeps the store's error surface at
+exactly five reasons and lets the toggle ride the same mid-session save-failure handler
+as every other habit action (decision 17).
+
+## 23. The row is a pure function of the habit; badges update through the existing re-render path (Epic m1i25n4)
+
+**Decision:** `renderHabitRow` derives everything from the habit: the checkbox
+`checked` state is `completions.includes(today)` and the badge is
+`currentStreak(completions)`. `src/app.ts` wires
+`onToggle: (id) => runAction(toggleToday(id))` — the same in-memory-mirror re-render path
+as archive/restore — so a toggle updates the badge in place on the same `#habit-list`
+element with no reload (TOR-04-Ft8iQbI), and an archive → restore round-trip recomputes
+the badge from preserved history with no special casing (TOR-04-GN2fJoI).
+
+**Rationale:** With no per-widget imperative updates to keep in sync, a rendered row
+cannot drift from the stored history — every render is history-derived. Routing the
+toggle through the existing `runAction` path means there is exactly one state-→-render
+flow for every mutation, and the same-element re-render keeps focus and scroll position
+stable while the badge updates instantly.
+
+## 24. Test-environment neutrality for the late-evening local-date scenario (Epic m1i25n4 spec deviation)
+
+**Decision:** TOR-03-albP5kN as written names a specific scenario ("local time is
+2026-09-04 23:30 while the UTC date is already 2026-09-05"). The tests pin the local
+wall-clock fields (`new Date(2026, 8, 4, 23, 30)`, `vi.setSystemTime`) and assert the
+**local** key `"2026-09-04"` instead of pinning a specific UTC offset. The wrapup judged
+this no deviation in substance: the scenario's contract is "local, not UTC," which the
+tests verify exactly (`src/lib/streaks.test.ts:49`, `src/lib/habits.test.ts:251`).
+
+**Rationale:** Pinning a UTC offset would make the suite environment-dependent — failing
+on CI machines in other timezones — while asserting less than the contract actually
+requires. Asserting the local key under fake timers tests the invariant itself.
+
+---
+
+## 25. Known Issues and Deferred Work
 
 - **Favicon 404 (non-blocking):** browsers auto-request `/favicon.ico` and the Vite dev
   server returns a 404, producing one console error per page load. No TOR requires an
   icon; candidate for `/peak-workflow:quick-fix`. (Epic tVQOvBV wrapup; carried through
-  C1R8qkJ and AQNWtiB.)
+  C1R8qkJ, AQNWtiB, and m1i25n4.)
 - **`saveState` maps any `setItem` failure to `quota-exceeded`:** a blocked-storage
   `SecurityError` (localStorage disabled) would be mislabeled as "storage is full" in the
   inline message. Cosmetic message-accuracy nit for a future quick-fix. (Epic C1R8qkJ
@@ -270,14 +338,14 @@ every habit this epic can create — no UI path can produce a completion yet.
 - **Schema migrations:** not needed yet — `schemaVersion: 1` is the only version; an
   unknown version currently routes to the recovery banner ("Start fresh"). Migrations are
   future scope when a schema change first ships.
-- **Unwired row mounts (Epic AQNWtiB):** the "Done today" checkbox and the streak badge
-  (hardcoded 0) are epic m1i25n4 scope — check-in toggle, TOR-03 coverage, real streak
-  engine. When the toggle lands, re-verify duplicate-row independence at the interaction
-  level (currently state-level only, per decision 16).
 - **Minimal filter behavior (Epic AQNWtiB):** row visibility per All/Active/Archived only;
-  the full filtering/views epic is XDc5Tpp. Remaining Phase-3 epics (m1i25n4, XDc5Tpp)
-  must continue routing mutations through `updateState`.
+  the full filtering/views epic is XDc5Tpp. The remaining Phase-3 epic (XDc5Tpp) must
+  continue routing mutations through `updateState`.
 - **Hosting target:** the production artifact is static `dist/` output; hosting target
   (e.g., GitHub Pages) is TBD.
 - **No CI pipeline:** when one is added, configure it to run the quality gates on every
   PR and to respond to `vX.Y.Z` tags.
+
+*(Closed in m1i25n4: the "unwired row mounts" item — the "Done today" checkbox and streak
+badge are wired, TOR-03/TOR-04 coverage is in place, and duplicate-row independence was
+re-verified at the interaction level, closing the AQNWtiB follow-up from decision 16.)*
