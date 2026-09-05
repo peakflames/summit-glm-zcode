@@ -1,0 +1,55 @@
+# Discovery Changelog
+
+**Date:** 2026-09-04
+**Mode:** Brownfield (post-MVP ideation)
+**Previous Version:** 1.0 (both documents)
+
+## What Changed
+
+| Document | Section | Change Type | Summary |
+|----------|---------|-------------|---------|
+| product-vision.md | Header | Modified | Version 1.0 → 1.1 |
+| product-vision.md | §7 Out of Scope | Modified | "Themes / dark mode" clarified: no theme toggle; the PeakFlames canvas is dark-first by brand default |
+| product-vision.md | §9 Design Direction | Modified | Replaced "no CSS system to learn" with adoption of the PeakFlames Design System: obsidian canvas, flame/ember/amber accents, Archivo / IBM Plex Sans / JetBrains Mono type ramp, additive `.pf-*` class strategy, one-hot-element rule, ember-gradient selected filter, visible focus rings |
+| product-vision.md | §10 Data Strategy | Modified | Carved out the one network exception: brand webfonts fetched from Google Fonts on first load (cached; system-font fallback offline) — app-level I/O remains zero |
+| concept-of-operations.md | Header | Modified | Version 1.0 → 1.1 |
+| concept-of-operations.md | §3 Proposed System | Modified | Added a paragraph describing the vendored-token visual language and the additive `.pf-*` class strategy |
+| concept-of-operations.md | §6 System Interfaces | Modified | External interfaces: added the read-only Google Fonts fetch target (with offline fallback); added fonts row to the data-source table; data-flow diagram note updated |
+| concept-of-operations.md | §8 Constraints | Modified | Network constraint reworded: no app-level network calls; webfont fetch on first load only |
+| concept-of-operations.md | §9 Glossary | Modified | Added 6 terms: PeakFlames Design System, Token CSS, Flame accent, One hot element per view, Ember gradient, `.pf-*` classes |
+
+## New Capabilities Identified
+
+- **PeakFlames Design System adoption** — vendor the design system's token CSS
+  (11 files: `styles.css` + 10 `tokens/*.css`) byte-identical into the repo (source:
+  the already-verified copy in the sibling `summit` repo, originally from design
+  project `11ea476f-926c-40ea-8d34-91522c12d907`) and import it as the base stylesheet
+  layer.
+- **Additive `.pf-*` component styling** — apply the system's component classes
+  (`pf-btn`, `pf-card`, `pf-tabs`/`pf-tab`, `pf-label`, `pf-input`, `pf-error`,
+  `pf-hint`) alongside existing class names in the `src/ui/` components, with zero DOM
+  or behavior change; existing tests are the regression baseline.
+- **Brand typography** — Archivo / IBM Plex Sans / JetBrains Mono via Google Fonts
+  (`@import` in vendored tokens + `preconnect`), mirroring the reference
+  implementation.
+- **Visual-discipline TORs** — dark obsidian canvas + brand type ramp; exactly one
+  flame-accented element per view; visible keyboard focus rings; ember-gradient
+  selected-filter treatment. These become a new `05-visual-design` requirements feature
+  file and a design-system epic.
+
+## Priority Signal
+
+This is the final deliverable of the inter-repo Summit competition: adopt the PeakFlames
+Design System "in the same way" the sibling `summit` repo did (its epic R5e7z3Y is the
+reference playbook). Priority is fidelity to that playbook — byte-identical vendoring,
+additive-only class changes, and the same four visual-discipline TORs — applied to this
+repo's own file layout (`src/styles.css`, `src/ui/*`). The MVP functionality already
+shipped (5/5 epics complete) must not regress.
+
+## Deferred Items
+
+- Theme toggle / light mode — explicitly not wanted; the brand canvas is dark-first.
+- Self-hosting the brand fonts — rejected for this cycle in favor of mirroring the
+  co-worker's Google Fonts approach (may revisit if a strict zero-network guarantee is
+  ever required).
+- Any redesign beyond restyling — no DOM structure, copy, or feature changes.

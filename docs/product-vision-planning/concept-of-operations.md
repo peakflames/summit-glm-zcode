@@ -1,6 +1,6 @@
 # Summit — Concept of Operations (ConOps)
 
-**Document Version:** 1.0
+**Document Version:** 1.1
 **Date:** 2026-09-04
 **Status:** Draft
 
@@ -59,6 +59,18 @@ All state lives in the browser's `localStorage` under a single versioned key
 immediately; boot reads, validates, and hydrates from the same key, then prints
 `[INFO] Summit vX.Y.Z starting` to the console. There is no account, no server, no sync —
 privacy and offline capability are properties of the architecture, not settings.
+
+Visually, Summit is a PeakFlames product. The PeakFlames Design System's token CSS is
+vendored byte-identical into the repo and imported as the base stylesheet layer: a
+dark-first obsidian canvas, the flame/ember/amber accent ramp, and the brand type ramp
+(Archivo for display, IBM Plex Sans for body, JetBrains Mono for numeric detail). The
+Summit-specific stylesheet layers only layout on top, and components add the system's
+`.pf-*` classes alongside their existing class names — additive only, so DOM structure,
+copy, and behavior are untouched. The system's discipline rules apply: exactly one
+element per view carries the flame accent (the Add habit button, the one control
+guaranteed present regardless of habit count), the selected filter segment wears the
+ember gradient treatment, and every interactive control shows a visible keyboard focus
+ring.
 
 ## 4. User Roles & Profiles
 
@@ -164,15 +176,20 @@ the streak rule exactly as before.
 
 ## 6. System Interfaces & Data Flows
 
-**External interfaces:** none. Summit has no API, no telemetry, no fonts/CDN calls at
-runtime — the only interface is the browser UI, plus two diagnostic surfaces (the
-console startup line and the footer version string).
+**External interfaces:** the browser UI, two diagnostic surfaces (the console startup
+line and the footer version string), and one read-only fetch target: the PeakFlames
+brand webfonts (Archivo / IBM Plex Sans / JetBrains Mono) are loaded from Google Fonts
+via the vendored token CSS `@import` plus `<link rel="preconnect">` hints. Summit has no
+API and no telemetry, and habit data never touches the network. The font fetch happens
+on first load and is served from cache afterwards; if it fails (fully offline, blocked
+CDN), the app renders with system-font fallbacks and remains fully functional.
 
 **Data source:**
 
 | Source | Kind | Purpose |
 |---|---|---|
 | `localStorage["summit.habits.v1"]` | Browser key-value store | Sole persistence for all app data |
+| Google Fonts (`fonts.googleapis.com` / `fonts.gstatic.com`) | Static asset CDN (read-only) | PeakFlames brand webfonts; system-font fallback if unreachable |
 
 **Stored document (draft schema):**
 
@@ -218,7 +235,9 @@ console startup line and the footer version string).
  Boot: read key → validate/parse → hydrate state → render
        → console "[INFO] Summit vX.Y.Z starting"
  Unreadable data → banner: problem + "Start fresh" action.
- No network I/O at any point.
+ No app-level network I/O at any point. Webfonts (Google Fonts) are
+ fetched on first load; offline renders with system-font fallback.
+ Styles layering: vendored PeakFlames tokens (base) ← Summit layout (top).
 ```
 
 ## 7. Functional Summary
@@ -242,7 +261,7 @@ console startup line and the footer version string).
 | Users | One human per browser profile; no multi-user, no sharing |
 | Auth | None — there is nothing to authenticate to |
 | Data locality | 100% `localStorage`; browser eviction or user clearing loses data (accepted risk, surfaced via the unreadable-data banner) |
-| Network | Zero runtime network calls; fully functional offline after first load |
+| Network | No app-level network calls; the only fetch is the Google Fonts webfont request on first load (cached thereafter; system-font fallback keeps the app fully functional offline) |
 | Browsers | Current evergreen Chrome / Firefox / Safari / Edge; JavaScript required |
 | Language | English UI (v1) |
 | Versioning | SemVer; single source of truth `package.json#version` |
@@ -262,6 +281,12 @@ console startup line and the footer version string).
 | `summit.habits.v1` | The single `localStorage` key holding all app data |
 | Schema version | Integer field inside the stored JSON enabling future migrations |
 | Empty state | Friendly message shown when the current filter has no rows |
+| PeakFlames Design System | The shared design language for PeakFlames products: dark obsidian canvas, flame/ember/amber accent ramp, Archivo / IBM Plex Sans / JetBrains Mono type ramp, `.pf-*` component classes |
+| Token CSS | The design system's CSS custom-property files, vendored byte-identical into the repo and imported as the base stylesheet layer |
+| Flame accent | The design system's bright primary accent (`--flame`); reserved for exactly one "hot" element per view |
+| One hot element per view | Design-system rule: only one element per view may carry the flame accent — in Summit, the Add habit button |
+| Ember gradient | The design system's gradient treatment marking the selected filter tab |
+| `.pf-*` classes | Component classes from the design system (e.g. `pf-btn`, `pf-card`, `pf-tabs`), added additively alongside existing class names |
 | SPA | Single-page application — one HTML page, no routing |
 
 ---
