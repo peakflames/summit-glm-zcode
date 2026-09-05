@@ -1,5 +1,6 @@
-// Habit row rendering (Epic AQNWtiB, wired in Epic m1i25n4). One row per
-// habit: name, streak badge, "Done today" checkbox, and the archive/restore
+// Habit row rendering (Epic AQNWtiB, wired in Epic m1i25n4; archived tag added
+// in Epic XDc5Tpp). One row per habit: name, "Archived" tag when the habit is
+// archived, streak badge, "Done today" checkbox, and the archive/restore
 // action. The row is a pure function of the habit — the checkbox reflects the
 // stored completions and the badge comes from streaks.ts — so every render
 // (initial, post-toggle, restored) is history-derived with no special cases.
@@ -31,6 +32,15 @@ export function renderHabitRow(habit: Habit, callbacks: HabitRowCallbacks): HTML
   name.className = 'habit-name';
   name.textContent = habit.name;
   row.append(name);
+
+  // TOR-05-qD4GGzl: the archived row must be visually distinguished in the
+  // All view, where active and archived rows share the list.
+  if (habit.archived) {
+    const tag = document.createElement('span');
+    tag.className = 'archived-tag';
+    tag.textContent = 'Archived';
+    row.append(tag);
+  }
 
   const streak = String(currentStreak(habit.completions, today));
   const badge = document.createElement('span');

@@ -43,7 +43,14 @@ describe('app shell', () => {
     const input = document.querySelector<HTMLInputElement>('#habit-name');
     expect(input).toBeInstanceOf(HTMLInputElement);
     expect(document.querySelector<HTMLButtonElement>('#add-habit')?.textContent).toBe('Add');
-    expect(document.querySelector('#habit-filter')).toBeInstanceOf(HTMLSelectElement);
+    const filterSegments = [
+      ...document.querySelectorAll<HTMLButtonElement>('.filter-segment'),
+    ];
+    expect(filterSegments.map((segment) => segment.textContent)).toEqual([
+      'All',
+      'Active',
+      'Archived',
+    ]);
     expect(document.querySelector('#habit-list')).toBeInstanceOf(HTMLElement);
     expect(document.querySelector('#footer')?.textContent).not.toBe('');
 
@@ -270,9 +277,9 @@ function rowNames(): string[] {
 }
 
 function setFilter(value: 'all' | 'active' | 'archived'): void {
-  const select = document.querySelector<HTMLSelectElement>('#habit-filter')!;
-  select.value = value;
-  select.dispatchEvent(new Event('change', { bubbles: true }));
+  document.querySelector<HTMLButtonElement>(
+    `.filter-segment[data-filter-value="${value}"]`,
+  )!.click();
 }
 
 // TOR-02-XOoULU3 (UI level)
@@ -383,7 +390,11 @@ describe('habit list: archive and restore', () => {
     document.querySelector<HTMLButtonElement>('.habit-row .habit-action')!.click();
 
     expect(rowNames()).toEqual([]);
-    expect(document.querySelector('#habit-list')?.textContent).toContain('No habits yet');
+    // The Active view now distinguishes "everything archived" from "nothing
+    // yet" (TOR-05-0maiBlC), so the message is the no-active-variants one.
+    expect(document.querySelector('#habit-list')?.textContent).toContain(
+      'No active habits.',
+    );
     const gym = storedGym();
     expect(gym.archived).toBe(true);
     expect(gym.completions).toEqual([
@@ -710,5 +721,159 @@ describe('habit list: restored habit streak recompute', () => {
     setFilter('active');
     expect(rowNames()).toEqual(['Gym']);
     expect(rowBadge(habitRow(0))).toBe('0');
+  });
+});
+
+// Epic XDc5Tpp — filtering, views & offline verification (UI level).
+const TWO_ACTIVE_ONE_ARCHIVED_DOC = {
+  schemaVersion: 1,
+  habits: [
+    {
+      id: 'run-1',
+      name: 'Run',
+      createdAt: '2026-08-01T08:00:00.000Z',
+      archived: false,
+      completions: [],
+    },
+    {
+      id: 'gym-1',
+      name: 'Gym',
+      createdAt: '2026-08-01T08:00:00.000Z',
+      archived: true,
+      completions: ['2026-09-01', '2026-09-02'],
+    },
+    {
+      id: 'read-1',
+      name: 'Read',
+      createdAt: '2026-08-01T08:00:00.000Z',
+      archived: false,
+      completions: [],
+    },
+  ],
+};
+
+function selectedFilterSegment(): HTMLButtonElement {
+  return document.querySelector<HTMLButtonElement>('.filter-segment.is-selected')!;
+}
+
+// TOR-05-GjGNESQ / TOR-05-PrNhHoE / TOR-05-sAMxFFs / TOR-05-qD4GGzl
+// Given Summit is open (fresh or with habits present),
+// When the page renders and the user switches filter segments,
+// Then the three-segment control is visible with Active selected by default,
+// each view lists exactly its rows, and the All view visually distinguishes
+// the archived row with a tag and a Restore action.
+describe('filter bar and views', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.restoreAllMocks();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('opens with Active selected by default, with existing data', () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(TWO_ACTIVE_ONE_ARCHIVED_DOC));
+    bootShell();
+
+    expect(selectedFilterSegment().textContent).toBe('Active');
+    expect(selectedFilterSegment().getAttribute('aria-checked')).toBe('true');
+    expect(rowNames()).toEqual(['Run', 'Read']);
+  });
+
+  it('switching to Archived lists exactly the archived habit with Restore and a badge', () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(TWO_ACTIVE_ONE_ARCHIVED_DOC));
+    bootShell();
+
+    setFilter('archived');
+
+    expect(selectedFilterSegment().textContent).toBe('Archived');
+    expect(rowNames()).toEqual(['Gym']);
+    const row = document.querySelector<HTMLElement>('.habit-row')!;
+    expect(row.querySelector<HTMLButtonElement>('.habit-action')!.textContent).toBe(
+      'Restore',
+    );
+    expect(row.querySelector<HTMLElement>('.streak-badge')).not.toBeNull();
+
+    setFilter('active');
+    expect(rowNames()).toEqual(['Run', 'Read']);
+    for (const activeRow of document.querySelectorAll<HTMLElement>('.habit-row')) {
+      expect(
+        activeRow.querySelector<HTMLButtonElement>('.habit-action')!.textContent,
+      ).toBe('Archive');
+    }
+  });
+
+  it('All view shows every habit with the archived row tagged and offering Restore', () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(TWO_ACTIVE_ONE_ARCHIVED_DOC));
+    bootShell();
+
+    setFilter('all');
+
+    expect(rowNames()).toEqual(['Run', 'Gym', 'Read']);
+    const archivedRow = document.querySelectorAll<HTMLElement>('.habit-row')[1]!;
+    expect(archivedRow.dataset.habitId).toBe('gym-1');
+    expect(archivedRow.querySelector<HTMLElement>('.archived-tag')?.textContent).toBe(
+      'Archived',
+    );
+    expect(
+      archivedRow.querySelector<HTMLButtonElement>('.habit-action')!.textContent,
+    ).toBe('Restore');
+  });
+});
+
+// TOR-05-0maiBlC
+// Given the app state matches each row of the feature file's table,
+// When the corresponding filter is selected,
+// Then each case renders its expected message instead of an empty list area.
+describe('per-filter empty states', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.restoreAllMocks();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('Active with no habits at all: "No habits yet. Add your first habit above."', () => {
+    bootShell();
+
+    const list = document.querySelector('#habit-list')!;
+    expect(list.textContent).toBe('No habits yet. Add your first habit above.');
+    expect(document.querySelector('.empty-state')).not.toBeNull();
+  });
+
+  it('Active with only archived habits: "No active habits."', () => {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        schemaVersion: 1,
+        habits: [TWO_ACTIVE_ONE_ARCHIVED_DOC.habits[1]!],
+      }),
+    );
+    bootShell();
+
+    expect(document.querySelector('#habit-list')?.textContent).toBe(
+      'No active habits.',
+    );
+  });
+
+  it('Archived with no archived habits: "No archived habits."', () => {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        schemaVersion: 1,
+        // Two active habits, none archived.
+        habits: [TWO_ACTIVE_ONE_ARCHIVED_DOC.habits[0]!, TWO_ACTIVE_ONE_ARCHIVED_DOC.habits[2]!],
+      }),
+    );
+    bootShell();
+
+    setFilter('archived');
+
+    expect(document.querySelector('#habit-list')?.textContent).toBe(
+      'No archived habits.',
+    );
   });
 });

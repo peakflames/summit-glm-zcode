@@ -91,8 +91,39 @@ body {
   cursor: pointer;
 }
 
-.filter {
-  font-size: 0.95rem;
+.filter-bar {
+  display: inline-flex;
+  border: 1px solid #b8c4cf;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.filter-segment {
+  padding: 0.35rem 0.9rem;
+  border: none;
+  background: #fff;
+  color: #1c2733;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.filter-segment + .filter-segment {
+  border-left: 1px solid #b8c4cf;
+}
+
+.filter-segment.is-selected {
+  background: #2563eb;
+  color: #fff;
+}
+
+.archived-tag {
+  padding: 0.1rem 0.5rem;
+  border: 1px solid #b8c4cf;
+  border-radius: 999px;
+  background: #eef1f4;
+  color: #5c6b7a;
+  font-size: 0.75rem;
+  white-space: nowrap;
 }
 
 .habit-list {
