@@ -16,7 +16,9 @@ export interface HabitRowCallbacks {
 
 export function renderHabitRow(habit: Habit, callbacks: HabitRowCallbacks): HTMLElement {
   const row = document.createElement('div');
-  row.className = 'habit-row';
+  // pf-card (Epic NZK8kqE) supplies the raised surface; the row layout stays
+  // in styles.css under the original class name.
+  row.className = 'habit-row pf-card';
   row.dataset.habitId = habit.id;
 
   const today = todayLocalDate();
@@ -51,7 +53,10 @@ export function renderHabitRow(habit: Habit, callbacks: HabitRowCallbacks): HTML
 
   const action = document.createElement('button');
   action.type = 'button';
-  action.className = 'habit-action';
+  // pf-btn--secondary (Epic NZK8kqE): the archive/restore control must NOT
+  // carry the flame accent — the Add button is the one hot element
+  // (TOR-07-EXjNoVz).
+  action.className = 'habit-action pf-btn pf-btn--secondary';
   if (habit.archived) {
     action.textContent = 'Restore';
     action.addEventListener('click', () => callbacks.onRestore(habit.id));

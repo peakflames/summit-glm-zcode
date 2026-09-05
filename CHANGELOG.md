@@ -7,10 +7,22 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
-## [Unreleased]
+## [0.2.0] — 05-Sep-2026
 
 ### Added
+- PeakFlames Design System adoption (Epic NZK8kqE): 11 token CSS files vendored
+  byte-identical into `src/styles/peakflames/`; `.pf-*` component classes added
+  alongside every existing class name; design-system TOR baseline
+  `docs/requirements/07-visual-design.feature.md`.
+
 ### Changed
+- The UI now renders on the PeakFlames dark obsidian canvas with the brand type ramp
+  (Archivo / IBM Plex Sans / JetBrains Mono via Google Fonts + preconnect, system-font
+  fallback), a single flame-accented primary action (the Add button), ember-gradient
+  filter selection, visible `:focus-visible` rings, and an amber streak badge more
+  prominent than the habit name. Strictly visual: all pre-existing behavior and tests
+  pass unmodified.
+
 ### Fixed
 
 ---

@@ -1,6 +1,6 @@
 # Summit — Product Vision & Brief
 
-**Document Version:** 1.0
+**Document Version:** 1.1
 **Date:** 2026-09-04
 **Status:** Draft
 
@@ -112,7 +112,8 @@ truly ends). If neither today nor yesterday is completed, the streak is **0**.
 - Manually backfilling completions for past days
 - History views or charts beyond the current-streak badge
 - UI frameworks (hand-rolled DOM + TypeScript)
-- Themes / dark mode
+- Themes / dark mode — no theme toggle; the PeakFlames canvas is dark-first by brand
+  default (see §9)
 - Import/export of data
 - PWA install / app-store packaging
 
@@ -148,8 +149,21 @@ truly ends). If neither today nor yesterday is completed, the streak is **0**.
 - The streak number is the visual hero of each row; everything else is subordinate
 - Instant feedback: every action updates the UI and persisted state immediately, no
   reloads or spinners
-- Plain semantic HTML and CSS, hand-rolled DOM via TypeScript — no framework, no CSS
-  system to learn
+- Summit adopts the **PeakFlames Design System** (the shared design language for
+  PeakFlames products) as its visual language: a dark-first obsidian canvas with a
+  flame/ember/amber accent ramp, set in the system's brand type ramp — Archivo for
+  display/heading text, IBM Plex Sans for body copy, JetBrains Mono for numeric and
+  technical detail *(amended 2026-09-04; was "no CSS system to learn")*
+- Adoption is **additive and token-first**: the design system's token CSS is vendored
+  byte-identical into the repo and imported as the base stylesheet layer; Summit-specific
+  CSS keeps only layout on top of it; `.pf-*` component classes are added alongside
+  existing class names — never replacing them — so DOM structure and behavior stay
+  untouched
+- The design system's **"one hot element per view"** rule holds: exactly one element per
+  view (the primary action — the Add habit button) carries the flame accent, keeping the
+  app calm even on a dark, high-contrast palette
+- The selected Active/Archived filter segment is marked with the design system's ember
+  gradient treatment, and every interactive control shows a visible keyboard focus ring
 - Version always visible in the footer (`Summit vX.Y.Z`)
 - Inline error messages that name the problem and the next action — never console-only,
   never vague
@@ -163,9 +177,13 @@ key `summit.habits.v1`. The stored document is JSON with a `schemaVersion` integ
 restore) serializes the in-memory state and writes it back immediately — there is no save
 button, no debounce, and no background process.
 
-There is no network I/O at any point: the app is fully functional offline after first
-load, and habit data never leaves the device. Freshness is therefore trivially immediate —
-the UI reads and writes the same in-memory state that is persisted on every change.
+There is no app-level network I/O at any point: the app is fully functional offline after
+first load, and habit data never leaves the device. The single exception is brand
+typography — the PeakFlames Design System's webfonts (Archivo / IBM Plex Sans /
+JetBrains Mono) are fetched from Google Fonts on first load and cached thereafter; without
+them the app falls back to system fonts and remains fully functional. Freshness is
+therefore trivially immediate — the UI reads and writes the same in-memory state that is
+persisted on every change.
 
 Accepted risks, surfaced rather than hidden: browsers may evict `localStorage` (storage
 pressure, private-mode expiry, or the user clearing site data). Summit treats unreadable

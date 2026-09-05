@@ -1,0 +1,132 @@
+{
+  "feature_id": "07",
+  "feature_file": "07-visual-design.feature.md",
+  "generated": "2026-09-04",
+  "generator": "haiku-sub-agent via /peak-workflow:capture-requirements",
+  "requirements": [
+    {
+      "id": "TOR-07-xFBFuj6",
+      "title": "The web application shall render its interface on a dark, obsidian-toned canvas using the PeakFlames Design System's brand type ramp",
+      "traces_to": {
+        "vision": [
+          {
+            "section": "§9 — Design Direction",
+            "paraphrase": "Summit adopts the PeakFlames Design System as its visual language, which means the dark obsidian canvas and the Archivo (display) / IBM Plex Sans (body) type ramp are the brand baseline, not optional styling — this TOR makes that adoption observable."
+          },
+          {
+            "section": "§10 — Data Strategy",
+            "paraphrase": "The one sanctioned network call fetches the brand webfonts on first load, which is what makes rendering in Archivo and IBM Plex Sans possible at all; this TOR is the visible outcome of that carve-out."
+          }
+        ],
+        "conops": [
+          {
+            "scenario": "§3 — Proposed System (closing visual paragraph)",
+            "step": null,
+            "paraphrase": "The to-be description commits the UI to the vendored token CSS as the base stylesheet layer — obsidian canvas plus the brand type ramp — so the app presents as a PeakFlames product from first paint."
+          }
+        ]
+      }
+    },
+    {
+      "id": "TOR-07-EXjNoVz",
+      "title": "The web application shall render exactly one flame-accented \"hot\" element per view, reserved for the primary action",
+      "traces_to": {
+        "vision": [
+          {
+            "section": "§9 — Design Direction",
+            "paraphrase": "The design system's accent-discipline rule reserves the flame accent for exactly one element per view — the Add habit button — so the dark high-contrast palette stays calm and the primary action is unambiguous."
+          }
+        ],
+        "conops": [
+          {
+            "scenario": "§3 — Proposed System (closing visual paragraph)",
+            "step": null,
+            "paraphrase": "The to-be system names the Add habit button as the single flame-accented control, since it is the one action guaranteed to exist no matter how many habits the user has."
+          }
+        ]
+      }
+    },
+    {
+      "id": "TOR-07-c3lKxoV",
+      "title": "The web application shall display a visible focus ring on any interactive control when it receives keyboard focus",
+      "traces_to": {
+        "vision": [
+          {
+            "section": "§9 — Design Direction",
+            "paraphrase": "The design direction requires every interactive control to show a visible keyboard focus ring, so keyboard users can always tell where they are on the dark canvas."
+          }
+        ],
+        "conops": [
+          {
+            "scenario": "§3 — Proposed System (closing visual paragraph)",
+            "step": null,
+            "paraphrase": "The to-be system applies the design system's discipline rules wholesale, including the focus-ring rule, so tabbing through input, filters, and row controls never loses the user."
+          }
+        ]
+      }
+    },
+    {
+      "id": "TOR-07-o4sphQD",
+      "title": "The web application shall indicate the currently selected Active/Archived filter using the PeakFlames Design System's ember gradient treatment",
+      "traces_to": {
+        "vision": [
+          {
+            "section": "§9 — Design Direction",
+            "paraphrase": "The selected Active/Archived filter segment is explicitly specified to wear the design system's ember gradient, giving instant visual confirmation of which list is on screen."
+          }
+        ],
+        "conops": [
+          {
+            "scenario": "§3 — Proposed System (closing visual paragraph)",
+            "step": null,
+            "paraphrase": "The to-be description assigns the ember gradient to whichever filter segment is selected, so switching between Active and Archived always leaves a visible cue of the current view."
+          }
+        ]
+      }
+    },
+    {
+      "id": "TOR-07-ywpamQm",
+      "title": "The web application shall render with system-font fallback and remain fully functional when the PeakFlames brand webfonts cannot be fetched",
+      "traces_to": {
+        "vision": [
+          {
+            "section": "§10 — Data Strategy",
+            "paraphrase": "The data strategy's sole network exception loads the brand webfonts on first load and caches them; when that fetch cannot happen the app is specified to drop back to system fonts while staying fully usable — this TOR pins that degradation path as observable behavior."
+          }
+        ],
+        "conops": [
+          {
+            "scenario": "§6 — System Interfaces & Data Flows (external interfaces + Google Fonts data-source row)",
+            "step": null,
+            "paraphrase": "The brand webfonts are the app's only read-only fetch target, served from Google Fonts and cached after first load; the interface spec requires that a failed fetch degrades typography only, never function."
+          },
+          {
+            "scenario": "§8 — Operational Constraints (Network row)",
+            "step": null,
+            "paraphrase": "The network constraint permits exactly one outbound request — the first-load webfont fetch — and demands that offline or blocked conditions still leave every app feature working on system-font fallback."
+          }
+        ]
+      }
+    },
+    {
+      "id": "TOR-07-pa7ak24",
+      "title": "The application shall render the streak number more visually prominent than the habit name on every habit row",
+      "traces_to": {
+        "vision": [
+          {
+            "section": "§9 — Design Direction (streak number as the visual hero of each row)",
+            "paraphrase": "The design direction casts the streak count as the hero of every habit row with all other content subordinate; this TOR turns that hierarchy into a checkable sizing/weight relationship between the badge and the habit name."
+          }
+        ],
+        "conops": [
+          {
+            "scenario": "§3 — Proposed System (streak badge as the row's motivating number)",
+            "step": null,
+            "paraphrase": "The to-be system puts a live streak badge at the heart of each row because the motivating count is what brings the user back tomorrow, so it should carry more visual weight than the habit's name."
+          }
+        ]
+      }
+    }
+  ],
+  "coverage_gaps": []
+}
