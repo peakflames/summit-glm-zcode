@@ -1,7 +1,7 @@
 # Epic XDc5Tpp: Filtering, Views & Offline Verification
 
 **Phase:** 3 — Frontend
-**Status:** Implemented — 2026-09-04
+**Status:** Complete — 2026-09-05
 **Dependencies:** Epic AQNWtiB (Habit Management UI — active and archived habits exist), Epic m1i25n4 (Daily Check-in & Streaks — badges render on rows)
 
 > **Brand:** Use the project's brand guidelines skill for the filter control, archived-row tag, and empty states if one is configured.
