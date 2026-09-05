@@ -1,7 +1,7 @@
 # Epic m1i25n4: Daily Check-in & Streaks
 
 **Phase:** 3 — Frontend
-**Status:** Implemented — 2026-09-04
+**Status:** Complete — 2026-09-04
 **Dependencies:** Epic C1R8qkJ (Persistence Store & Recovery — completions persist per mutation), Epic AQNWtiB (Habit Management UI — habit rows exist to check off)
 
 > **Brand:** Use the project's brand guidelines skill for the "Done today" checkbox and streak badge if one is configured.
